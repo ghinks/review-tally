@@ -32,12 +32,3 @@ def get_pull_requests_between_dates(owner: str, repo: str, start_date: str, end_
         page += 1
 
     return pull_requests
-
-if __name__ == '__main__':
-    owner_name = "owner_name"
-    repo_name = "repo_name"
-    start_date = datetime.strptime("2023-01-01T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ")
-    end_date = datetime.strptime("2023-12-31T23:59:59Z", "%Y-%m-%dT%H:%M:%SZ")
-    pull_requests = get_pull_requests_between_dates(owner_name, repo_name, start_date, end_date)
-    for pr in pull_requests:
-        print(f"ID: {pr['id']}, Title: {pr['title']}, Created At: {pr['created_at']}, URL: {pr['html_url']}")
