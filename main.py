@@ -34,7 +34,7 @@ if __name__ == '__main__':
             #print(f"ID: {pr['id']}, Title: {pr['title']}, Created At: {pr['created_at']}, URL: {pr['html_url']}")
             reviewers = get_reviewers_for_pull_request(org_name, repo['name'], pr['number'])
             for reviewer in reviewers:
-                print(f"Reviewer: {reviewer['login']}, URL: {reviewer['html_url']}")
+                #print(f"Reviewer: {reviewer['login']}, URL: {reviewer['html_url']}")
                 if reviewer['login'] in reviewer_prs:
                     reviewer_prs[reviewer['login']] += 1
                 else:
