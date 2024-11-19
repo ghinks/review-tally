@@ -1,0 +1,15 @@
+query {
+  repository(owner: "expressjs", name: "express") {
+   pullRequests(states: [MERGED, OPEN], first: 100, filter: { createdAt: { gte: "2022-01-01T00:00:00Z", lte: "2022-01-31T23:59:59Z" } }) {
+    nodes {
+      id
+      title
+      createdAt
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+   }
+  }
+}
