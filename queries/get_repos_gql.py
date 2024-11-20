@@ -3,7 +3,7 @@ import json
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN_PR_REVIEW")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 # Define the transport with the endpoint URL
 transport = AIOHTTPTransport(
     url="https://api.github.com/graphql",

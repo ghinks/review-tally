@@ -1,7 +1,7 @@
 import os
 import requests
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN_PR_REVIEW")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 
 def get_org_repos(org: str) -> list[dict]:

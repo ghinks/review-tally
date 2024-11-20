@@ -3,6 +3,8 @@ from queries.get_repos_rest import get_org_repos
 from datetime import datetime
 from queries.get_reviewers_rest import get_reviewers_for_pull_request
 from tabulate import tabulate
+from cli.parse_cmd_line import parse_cmd_line
+
 
 def test_get_prs():
     owner_name = "expressjs"
@@ -30,7 +32,7 @@ def test_get_reviewers():
 if __name__ == "__main__":
     # map containing the reviewer name and the number of pull requests reviewed
     reviewer_prs = {}
-    org_name = "expressjs"
+    org_name, start_date, end_date = parse_cmd_line()
     repositories = get_org_repos(org_name)
     for repo in repositories:
         # print(f"Name: {repo['name']}, URL: {repo['html_url']}")
