@@ -9,3 +9,10 @@ A very linear approach is being taken
 - query the repositories to get the pull requests
 - query the pull requests to get the reviews
 - count the reviews by reviewer 
+
+## Development
+
+### linting
+```shell
+poetry run black .
+```

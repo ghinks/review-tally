@@ -3,11 +3,12 @@ import requests
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN_PR_REVIEW")
 
+
 def get_org_repos(org: str) -> list[dict]:
     url = f"https://api.github.com/orgs/{org}/repos"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
+        "Accept": "application/vnd.github.v3+json",
     }
     repos = []
     params = {"per_page": 100, "page": 1}
