@@ -21,9 +21,9 @@ def parse_cmd_line():
     end_date_help = "End date in the format YYYY-MM-DD"
     parser = argparse.ArgumentParser(description=description)
     # these arguments are required
+    parser.add_argument("-o", "--org", required=True, help=org_help)
     parser.add_argument("-s", "--start_date", required=True, help=start_date_help)
     parser.add_argument("-e", "--end_date", required=True, help=end_date_help)
-    parser.add_argument("-o", "--org", required=True, help=org_help)
     args = parser.parse_args()
     start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
     end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
