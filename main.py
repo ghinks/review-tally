@@ -1,6 +1,5 @@
 from queries.get_prs import get_pull_requests_between_dates
 from queries.get_repos_rest import get_org_repos
-from datetime import datetime
 from queries.get_reviewers_rest import get_reviewers_for_pull_request
 from tabulate import tabulate
 from cli.parse_cmd_line import parse_cmd_line
@@ -25,4 +24,6 @@ if __name__ == "__main__":
                     reviewer_prs[reviewer["login"]] = 1
     # convert the dictionary to a list of lists and print out with tabulate
     table = [[k, v] for k, v in reviewer_prs.items()]
+    # convert the dictionary to a list of lists and sort by the number of PRs reviewed
+    table = sorted(table, key=lambda x: x[1], reverse=True)
     print(tabulate(table))
