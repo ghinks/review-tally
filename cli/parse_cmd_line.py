@@ -6,11 +6,11 @@ import argparse
 from datetime import datetime
 
 
-def parse_cmd_line():
+def parse_cmd_line() -> [str, datetime, datetime, str]:
     """Parse command line arguments
 
     :return:
-    organization name, start date, end date
+    organization name, start date, end date, language
     """
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare 
@@ -19,12 +19,15 @@ def parse_cmd_line():
     org_help = "Organization name"
     start_date_help = "Start date in the format YYYY-MM-DD"
     end_date_help = "End date in the format YYYY-MM-DD"
+    language_selection = "Select the language to filter the pull requests"
     parser = argparse.ArgumentParser(description=description)
     # these arguments are required
     parser.add_argument("-o", "--org", required=True, help=org_help)
     parser.add_argument("-s", "--start_date", required=True, help=start_date_help)
     parser.add_argument("-e", "--end_date", required=True, help=end_date_help)
+    # add the language selection argument
+    parser.add_argument("-l", "--language", required=False, help=language_selection)
     args = parser.parse_args()
     start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
     end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
-    return args.org, start_date, end_date
+    return args.org, start_date, end_date, args.language
