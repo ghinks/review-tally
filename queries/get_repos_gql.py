@@ -3,6 +3,7 @@ import requests
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
+
 def get_repos_by_language(org: str, language: str) -> list[dict]:
     url = "https://api.github.com/graphql"
     headers = {
@@ -25,10 +26,10 @@ def get_repos_by_language(org: str, language: str) -> list[dict]:
       }
     }
     """
-    variables = {
-        "org": org
-    }
-    response = requests.post(url, headers=headers, json={"query": query, "variables": variables})
+    variables = {"org": org}
+    response = requests.post(
+        url, headers=headers, json={"query": query, "variables": variables}
+    )
     response.raise_for_status()
     data = response.json()
     # Filter repositories by language

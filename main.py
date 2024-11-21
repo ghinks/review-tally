@@ -1,5 +1,6 @@
 from queries.get_prs import get_pull_requests_between_dates
-from queries.get_repos_rest import get_org_repos
+
+# from queries.get_repos_rest import get_org_repos
 from queries.get_repos_gql import get_repos_by_language
 from queries.get_reviewers_rest import get_reviewers_for_pull_request
 from tabulate import tabulate
@@ -9,7 +10,7 @@ if __name__ == "__main__":
     # map containing the reviewer name and the number of pull requests reviewed
     reviewer_prs = {}
     org_name, start_date, end_date, language = parse_cmd_line()
-    #repositories = get_org_repos(org_name)
+    # repositories = get_org_repos(org_name)
     repositories = get_repos_by_language(org_name, language)
     for repo in repositories:
         pull_requests = get_pull_requests_between_dates(
