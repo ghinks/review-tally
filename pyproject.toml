@@ -5,6 +5,9 @@ description = ""
 authors = ["ghinks <ghinks@yahoo.com>"]
 license = "Apache"
 readme = "README.md"
+packages = [
+    { include = "pr_reviews/**/*" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -19,3 +22,6 @@ black = "^24.10.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+pr-reviews = "pr_reviews.main:main"

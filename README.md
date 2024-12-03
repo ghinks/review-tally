@@ -14,7 +14,7 @@ A very linear approach is being taken
 ## Usage
 
 ```shell
-python main.py --org "my-org" --start-date "2021-01-01" --end-date "2021-12-31"
+python pr_reviews.py --org "my-org" --start-date "2021-01-01" --end-date "2021-12-31"
 ```
 
 This program uses your local environment to authenticate with github using the
@@ -25,4 +25,8 @@ GITHUB_TOKEN environment variable.
 ### linting
 ```shell
 poetry run black .
+```
+### local development
+```shell
+python -m pr_reviews.main --help
 ```
