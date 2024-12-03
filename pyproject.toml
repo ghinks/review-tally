@@ -6,8 +6,7 @@ authors = ["ghinks <ghinks@yahoo.com>"]
 license = "Apache"
 readme = "README.md"
 packages = [
-    { include = "pr_reviews" },
-    { include = "pr_reviews/queries/*.py" }
+    { include = "pr_reviews/**/*" }
 ]
 
 [tool.poetry.dependencies]
