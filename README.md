@@ -26,3 +26,7 @@ GITHUB_TOKEN environment variable.
 ```shell
 poetry run black .
 ```
+### local development
+```shell
+python -m pr_reviews.main --help
+```
