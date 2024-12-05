@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "pr-reviews"
 version = "0.1.0"
-description = ""
+description = "A tool to discover who is reviewing your organization's PRs"
 authors = ["ghinks <ghinks@yahoo.com>"]
 license = "Apache"
+repository = "https://github.com/ghinks/pr-reviews"
 readme = "README.md"
 packages = [
     { include = "pr_reviews/**/*" }
