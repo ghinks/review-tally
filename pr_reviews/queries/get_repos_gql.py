@@ -1,10 +1,17 @@
 import os
 import requests
 
+from pr_reviews.queries.local_exceptions import GitHubTokenNotDefinedError
+
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
+# exceptions.py
 
 def get_repos_by_language(org: str, language: str) -> list[dict]:
+    # check for github_token and raise an exception if it
+    # is not defined
+    if GITHUB_TOKEN is None:
+        raise GitHubTokenNotDefinedError("GITHUB_TOKEN is not defined")
     url = "https://api.github.com/graphql"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
