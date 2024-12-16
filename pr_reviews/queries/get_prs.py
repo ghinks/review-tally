@@ -13,7 +13,7 @@ def get_pull_requests_between_dates(
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-    params = {"state": "all", "sort": "updated", "direction": "desc", "per_page": 100}
+    params = {"state": "all", "sort": "created_at", "direction": "desc", "per_page": 30}
     pull_requests = []
     page = 1
 
@@ -27,6 +27,10 @@ def get_pull_requests_between_dates(
             created_at = datetime.strptime(pr["created_at"], "%Y-%m-%dT%H:%M:%SZ")
             if start_date <= created_at <= end_date:
                 pull_requests.append(pr)
+
         page += 1
+        print(f"Page: {page} last date: {created_at}")
+        if created_at < end_date:
+            break
 
     return pull_requests
