@@ -7,9 +7,13 @@ from tabulate import tabulate
 from .cli.parse_cmd_line import parse_cmd_line
 import time
 
+# TODO use a library here
+DEBUG_FLAG = False
+
 
 def timestamped_print(message):
-    print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}", flush=True)
+    if DEBUG_FLAG:
+        print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}", flush=True)
 
 
 BATCH_SIZE = 5
@@ -39,7 +43,7 @@ def main():
     # batch them to improve performance.
     # get all the repo names
     repo_names = [repo["name"] for repo in repositories]
-    print(repo_names)
+    # print(repo_names)
     for repo in repo_names:
         timestamped_print(f"Processing {repo}")
         pull_requests = get_pull_requests_between_dates(
