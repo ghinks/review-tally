@@ -7,6 +7,7 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 # exceptions.py
 
+
 def get_repos_by_language(org: str, language: str) -> list[dict]:
     # check for github_token and raise an exception if it
     # is not defined
