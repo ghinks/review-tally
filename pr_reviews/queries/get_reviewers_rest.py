@@ -3,6 +3,11 @@ import aiohttp
 import asyncio
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+# get proxy settings from environment variables
+HTTPS_PROXY = os.getenv("HTTPS_PROXY")
+# check for lowercase https_proxy
+if not HTTPS_PROXY:
+    HTTPS_PROXY = os.getenv("https_proxy")
 
 
 async def fetch(session, url):
@@ -10,8 +15,12 @@ async def fetch(session, url):
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-    async with session.get(url, headers=headers) as response:
-        return await response.json()
+    if HTTPS_PROXY:
+        async with session.get(url, headers=headers, proxy=HTTPS_PROXY) as response:
+            return await response.json()
+    else:
+        async with session.get(url, headers=headers) as response:
+            return await response.json()
 
 
 async def fetch_batch(urls):
