@@ -22,4 +22,4 @@ jobs:
           poetry install
       - name: run the black linter
         run: |
-          python -m black --check .
+          python run black --check .
