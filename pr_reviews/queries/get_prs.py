@@ -29,7 +29,6 @@ def get_pull_requests_between_dates(
                 pull_requests.append(pr)
 
         page += 1
-        # print(f"Page: {page} last date: {created_at}")
         if created_at < end_date:
             break
 
