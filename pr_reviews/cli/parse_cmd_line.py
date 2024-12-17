@@ -3,7 +3,7 @@
 # to get the start and end dates for the pull requests and the organization name
 
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def parse_cmd_line() -> [str, datetime, datetime, str]:
@@ -23,11 +23,33 @@ def parse_cmd_line() -> [str, datetime, datetime, str]:
     parser = argparse.ArgumentParser(description=description)
     # these arguments are required
     parser.add_argument("-o", "--org", required=True, help=org_help)
-    parser.add_argument("-s", "--start_date", required=True, help=start_date_help)
-    parser.add_argument("-e", "--end_date", required=True, help=end_date_help)
+    date_format = "%Y-%m-%d"
+    two_weeks_ago = datetime.now() - timedelta(days=14)
+    today = datetime.now()
+    parser.add_argument(
+        "-s",
+        "--start_date",
+        required=False,
+        help=start_date_help,
+        default=two_weeks_ago.strftime(date_format),
+    )
+    parser.add_argument(
+        "-e",
+        "--end_date",
+        required=False,
+        help=end_date_help,
+        default=today.strftime(date_format),
+    )
     # add the language selection argument
     parser.add_argument("-l", "--language", required=False, help=language_selection)
     args = parser.parse_args()
-    start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
-    end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
+    # catch ValueError if the date format is not correct
+    try:
+        if args.start_date:
+            start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
+        if args.end_date:
+            end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
+    except ValueError as e:
+        print("Error:", e)
+        exit(1)
     return args.org, start_date, end_date, args.language

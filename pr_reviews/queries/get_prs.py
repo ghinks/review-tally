@@ -6,7 +6,7 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 
 def get_pull_requests_between_dates(
-    owner: str, repo: str, start_date: str, end_date: str
+    owner: str, repo: str, start_date: datetime, end_date: datetime
 ) -> list[dict]:
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
     headers = {
