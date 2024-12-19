@@ -24,17 +24,17 @@ def main():
     start_time = time.time()
     timestamped_print("Starting process")
     reviewer_prs = {}
-    org_name, start_date, end_date, language = parse_cmd_line()
+    org_name, start_date, end_date, languages = parse_cmd_line()
     try:
         timestamped_print(
             f"Calling get_repos_by_language {time.time() - start_time:.2f} seconds"
         )
-        repositories = get_repos_by_language(org_name, language)
+        repo_names = get_repos_by_language(org_name, languages)
     except GitHubTokenNotDefinedError as e:
         print("Error:", e)
         return
     timestamped_print(
-        f"Finished get_repos_by_language {time.time() - start_time:.2f} seconds for {len(repositories)} repositories"
+        f"Finished get_repos_by_language {time.time() - start_time:.2f} seconds for {len(repo_names)} repositories"
     )
     timestamped_print(
         f"Calling get_pull_requests_between_dates {time.time() - start_time:.2f} seconds"
@@ -42,7 +42,6 @@ def main():
     # it is possible to take these asynchronous requests and
     # batch them to improve performance.
     # get all the repo names
-    repo_names = [repo["name"] for repo in repositories]
     # print(repo_names)
     for repo in repo_names:
         timestamped_print(f"Processing {repo}")
