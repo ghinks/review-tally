@@ -8,7 +8,7 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 # exceptions.py
 
 
-def get_repos_by_language(org: str, language: str) -> list[dict]:
+def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     # check for github_token and raise an exception if it
     # is not defined
     if GITHUB_TOKEN is None:
@@ -41,15 +41,10 @@ def get_repos_by_language(org: str, language: str) -> list[dict]:
     response.raise_for_status()
     data = response.json()
     # Filter repositories by language
-    repos = []
-    # check that language is defined and if not return all repositories
-    if language is None:
-        for repo in data["data"]["organization"]["repositories"]["nodes"]:
-            repos.append(repo)
-    else:
-        for repo in data["data"]["organization"]["repositories"]["nodes"]:
-            for lang in repo["languages"]["nodes"]:
-                if lang["name"].lower() == language.lower():
-                    repos.append(repo)
-                    break
-    return repos
+    repo_names = [
+        repo["name"]
+        for repo in data["data"]["organization"]["repositories"]["nodes"]
+        for node in repo["languages"]["nodes"]
+        if node["name"].lower() in [language.lower() for language in languages]
+    ]
+    return repo_names

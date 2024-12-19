@@ -6,7 +6,7 @@ import argparse
 from datetime import datetime, timedelta
 
 
-def parse_cmd_line() -> [str, datetime, datetime, str]:
+def parse_cmd_line() -> [str, datetime, datetime, list[str]]:
     """Parse command line arguments
 
     :return:
@@ -52,4 +52,11 @@ def parse_cmd_line() -> [str, datetime, datetime, str]:
     except ValueError as e:
         print("Error:", e)
         exit(1)
-    return args.org, start_date, end_date, args.language
+    if start_date > end_date:
+        print("Error: Start date must be before end date")
+        exit(1)
+    # if the language arg has comma separated values, split them
+    languages = [args.language]
+    if args.language and "," in args.language:
+        languages = args.language.split(",")
+    return args.org, start_date, end_date, languages
