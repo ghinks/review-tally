@@ -23,6 +23,9 @@ jobs:
       - name: run the black linter
         run: |
           poetry run black --check .
+      - name: ruff
+        run: |
+          poetry run ruff check
       - name: run unit tests
         run: |
           poetry run pytest
