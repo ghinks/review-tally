@@ -22,6 +22,7 @@ asyncio = "^3.4.3"
 black = "^24.10.0"
 pytest = "^8.3.4"
 ruff = "^0.8.4"
+isort = "^5.13.2"
 
 [build-system]
 requires = ["poetry-core"]
@@ -29,3 +30,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 pr-reviews = "pr_reviews.main:main"
+
+[tool.ruff]
+exclude =[ "venv", "pr_reviews/**", "tests/**"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["D100", "D103", "D203", "D212"]
