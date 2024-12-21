@@ -1,6 +1,6 @@
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -24,7 +24,10 @@ def get_pull_requests_between_dates(
         if not prs:
             break
         for pr in prs:
-            created_at = datetime.strptime(pr["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+            created_at = ((
+                datetime.
+                    strptime(pr["created_at"], "%Y-%m-%dT%H:%M:%SZ"))
+                    .replace(tzinfo=timezone.utc))
             if start_date <= created_at <= end_date:
                 pull_requests.append(pr)
 

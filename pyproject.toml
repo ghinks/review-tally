@@ -32,7 +32,7 @@ pr-reviews = "pr_reviews.main:main"
 
 [tool.ruff]
 line-length = 79
-exclude =[ "venv", "pr_reviews/cli/**", "pr_reviews/queries/**", "tests/**", "pr_reviews/__init__.py"]
+exclude =[ "venv", "pr_reviews/cli/__init__.py", "pr_reviews/queries/**", "tests/**", "pr_reviews/__init__.py"]
 
 [tool.ruff.lint]
 select = ["ALL"]
