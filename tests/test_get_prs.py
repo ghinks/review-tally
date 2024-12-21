@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
-from datetime import datetime
+from datetime import datetime, timezone
 from pr_reviews.queries.get_prs import get_pull_requests_between_dates
 
 
@@ -22,8 +22,8 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
         # Define the input parameters
         owner = "test_owner"
         repo = "test_repo"
-        start_date = datetime(2023, 1, 1)
-        end_date = datetime(2023, 1, 3)
+        start_date = datetime(2023, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2023, 1, 3, tzinfo=timezone.utc)
 
         # Call the function to test
         result = get_pull_requests_between_dates(owner, repo, start_date, end_date)
