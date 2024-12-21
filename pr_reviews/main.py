@@ -18,8 +18,8 @@ DEBUG_FLAG = False
 def timestamped_print(message: str) -> None:
     if DEBUG_FLAG:
         print(  # noqa: T201
-            f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}",
-            flush=True)
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}", flush=True,
+        )
 
 
 BATCH_SIZE = 5
@@ -54,7 +54,10 @@ def main() -> None:
     for repo in repo_names:
         timestamped_print(f"Processing {repo}")
         pull_requests = get_pull_requests_between_dates(
-            org_name, repo, start_date, end_date,
+            org_name,
+            repo,
+            start_date,
+            end_date,
         )
         timestamped_print(
             "Finished get_pull_requests_between_dates "

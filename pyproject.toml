@@ -19,7 +19,6 @@ asyncio = "^3.4.3"
 
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.10.0"
 pytest = "^8.3.4"
 ruff = "^0.8.4"
 isort = "^5.13.2"
@@ -32,7 +31,8 @@ build-backend = "poetry.core.masonry.api"
 pr-reviews = "pr_reviews.main:main"
 
 [tool.ruff]
-exclude =[ "venv", "pr_reviews/**", "tests/**"]
+line-length = 79
+exclude =[ "venv", "pr_reviews/cli/**", "pr_reviews/queries/**", "tests/**", "pr_reviews/__init__.py"]
 
 [tool.ruff.lint]
 select = ["ALL"]
