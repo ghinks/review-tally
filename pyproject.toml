@@ -32,8 +32,20 @@ pr-reviews = "pr_reviews.main:main"
 
 [tool.ruff]
 line-length = 79
-exclude =[ "venv", "pr_reviews/cli/__init__.py", "pr_reviews/queries/**", "tests/**", "pr_reviews/__init__.py"]
+exclude =[ "venv", "pr_reviews/cli/__init__.py", "pr_reviews/queries/**", "tests/__init__.py", "pr_reviews/__init__.py"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D103", "D203", "D212"]
+ignore = ["D100", "D101", "D102", "D103", "D203", "D212", "PT009"]
+
+#E: Errors
+#W: Warnings
+#F: Pyflakes (logical errors)
+#C: Cyclomatic complexity
+#D: Docstrings (PEP 257)
+#N: Naming conventions (PEP 8)
+#I: Import conventions
+#PT: Pytest-specific rules
+#Q: Quotes (single vs. double)
+#S: Security issues
+#T: Type annotations

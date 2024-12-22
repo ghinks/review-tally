@@ -1,21 +1,33 @@
 import unittest
-from unittest.mock import patch, Mock
 from datetime import datetime, timezone
+from unittest.mock import Mock, patch
+
 from pr_reviews.queries.get_prs import get_pull_requests_between_dates
 
 
 class TestGetPullRequestsBetweenDates(unittest.TestCase):
-    @patch("requests.get")
-    def test_get_pull_requests_between_dates(self, mock_get):
-        # Define the mock response data
-        mock_response_data = [
-            {"created_at": "2023-01-01T12:00:00Z", "number": 1, "title": "Test PR 1"},
-            {"created_at": "2023-01-02T12:00:00Z", "number": 2, "title": "Test PR 2"},
-        ]
+    PR_NUMBER_1 = 1
+    PR_NUMBER_2 = 2
+    # Define the mock response data
+    MOCK_RESP_DATA = (
+        {"created_at": "2023-01-01T12:00:00Z", "number":
+            PR_NUMBER_1,
+         "title": "Test PR 1"},
+        {"created_at": "2023-01-02T12:00:00Z", "number":
+            PR_NUMBER_2,
+         "title": "Test PR 2"},
+    )
+    EXPECTED_LEN = len(MOCK_RESP_DATA)
 
-        # Create a mock response object and set its json method to return the mock data
+    @patch("requests.get")
+    def test_get_pull_requests_between_dates(self,
+                                             mock_get) -> None:  # noqa: ANN001
+
+        # Create a mock response object and set its json method
+        # to return the mock data
         mock_response = Mock()
-        mock_response.json.return_value = mock_response_data
+        mock_response.json.return_value = (
+            TestGetPullRequestsBetweenDates.MOCK_RESP_DATA)
         mock_response.status_code = 200
         mock_get.return_value = mock_response
 
@@ -26,12 +38,16 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
         end_date = datetime(2023, 1, 3, tzinfo=timezone.utc)
 
         # Call the function to test
-        result = get_pull_requests_between_dates(owner, repo, start_date, end_date)
+        result = get_pull_requests_between_dates(owner, repo, start_date,
+                                                 end_date)
 
         # Assert the result
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["number"], 1)
-        self.assertEqual(result[1]["number"], 2)
+        self.assertEqual(len(result),
+                         TestGetPullRequestsBetweenDates.EXPECTED_LEN)
+        self.assertEqual(result[0]["number"],
+                         TestGetPullRequestsBetweenDates.PR_NUMBER_1)
+        self.assertEqual(result[1]["number"],
+                         TestGetPullRequestsBetweenDates.PR_NUMBER_2)
 
 
 if __name__ == "__main__":
