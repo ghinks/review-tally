@@ -1,24 +1,34 @@
 import os
-import requests
 from datetime import datetime, timezone
+
+import requests
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 
 def get_pull_requests_between_dates(
-    owner: str, repo: str, start_date: datetime, end_date: datetime
+    owner: str, repo: str, start_date: datetime, end_date: datetime,
 ) -> list[dict]:
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-    params = {"state": "all", "sort": "created_at", "direction": "desc", "per_page": 30}
+    params = {
+        "state": "all",
+        "sort": "created_at",
+        "direction": "desc","per_page": 30,
+    }
     pull_requests = []
     page = 1
+    timeout = 10
 
     while True:
-        response = requests.get(url, headers=headers, params={**params, "page": page})
+        response =(
+            requests.get(url,
+                         headers=headers,
+                         params={**params, "page": page},
+                         timeout=timeout))
         response.raise_for_status()
         prs = response.json()
         if not prs:
