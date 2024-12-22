@@ -45,12 +45,12 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
                                             end_date))
 
         # Assert the result
-        assert ( len(pull_requests) ==
-                         TestGetPullRequestsBetweenDates.EXPECTED_LEN )
-        assert ( pull_requests[0]["number"] ==
-                         TestGetPullRequestsBetweenDates.PR_NUMBER_1 )
-        assert ( pull_requests[1]["number"] ==
-                TestGetPullRequestsBetweenDates.PR_NUMBER_2 )
+        assert (len(pull_requests) ==
+                TestGetPullRequestsBetweenDates.EXPECTED_LEN)
+        assert (pull_requests[0]["number"] ==
+                TestGetPullRequestsBetweenDates.PR_NUMBER_1)
+        assert (pull_requests[1]["number"] ==
+                TestGetPullRequestsBetweenDates.PR_NUMBER_2)
 
 
 if __name__ == "__main__":
