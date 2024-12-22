@@ -38,16 +38,19 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
         end_date = datetime(2023, 1, 3, tzinfo=timezone.utc)
 
         # Call the function to test
-        result = get_pull_requests_between_dates(owner, repo, start_date,
-                                                 end_date)
+        pull_requests = (
+            get_pull_requests_between_dates(owner,
+                                            repo,
+                                            start_date,
+                                            end_date))
 
         # Assert the result
-        self.assertEqual(len(result),
-                         TestGetPullRequestsBetweenDates.EXPECTED_LEN)
-        self.assertEqual(result[0]["number"],
-                         TestGetPullRequestsBetweenDates.PR_NUMBER_1)
-        self.assertEqual(result[1]["number"],
-                         TestGetPullRequestsBetweenDates.PR_NUMBER_2)
+        assert ( len(pull_requests) ==
+                         TestGetPullRequestsBetweenDates.EXPECTED_LEN )
+        assert ( pull_requests[0]["number"] ==
+                         TestGetPullRequestsBetweenDates.PR_NUMBER_1 )
+        assert ( pull_requests[1]["number"] ==
+                TestGetPullRequestsBetweenDates.PR_NUMBER_2 )
 
 
 if __name__ == "__main__":
