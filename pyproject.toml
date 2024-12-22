@@ -36,7 +36,6 @@ exclude = [
     "venv",
     "pr_reviews/cli/__init__.py",
     "pr_reviews/queries/__init__.py",
-    "pr_reviews/queries/get_reviewers_rest.py",
     "pr_reviews/queries/get_repos_gql.py",
     "tests/__init__.py",
     "pr_reviews/__init__.py"
