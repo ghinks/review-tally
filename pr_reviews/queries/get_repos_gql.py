@@ -13,13 +13,13 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     # check for github_token and raise an exception if it
     # is not defined
 
-    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+    github_token = os.getenv("GITHUB_TOKEN")
 
-    if GITHUB_TOKEN is None:
+    if github_token is None:
         raise GitHubTokenNotDefinedError
     url = "https://api.github.com/graphql"
     headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Authorization": f"Bearer {github_token}",
         "Content-Type": "application/json",
     }
     query = """
