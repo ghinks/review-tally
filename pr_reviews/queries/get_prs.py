@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 
 import requests
 
+from pr_reviews.queries import TIMEOUT
+
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 
@@ -21,14 +23,13 @@ def get_pull_requests_between_dates(
     }
     pull_requests = []
     page = 1
-    timeout = 10
 
     while True:
         response =(
             requests.get(url,
                          headers=headers,
                          params={**params, "page": page},
-                         timeout=timeout))
+                         timeout=TIMEOUT))
         response.raise_for_status()
         prs = response.json()
         if not prs:
