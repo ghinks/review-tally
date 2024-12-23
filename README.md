@@ -1,32 +1,54 @@
 # pr-reviews
 
-For a github organization get the pull requests reviews for all repositories 
-within a time range and produce a table with the reviewers and the number of
-PRs reviewed by them.
+This tool is intended to retrieve basic statics about the reviews of pull
+requests for a GitHub organization in a given time frame. The default time
+from is 2 weeks. The tool will retrieve statistics only on repositories that
+have specific languages when specified.
 
-A very linear approach is being taken
-- query the org to get the repositories
-- query the repositories to get the pull requests
-- query the pull requests to get the reviews
-- count the reviews by reviewer 
-- present a an ordered table of the reviewers and the number of reviews
-
-## Usage
+basic usage:
+```bash
+pr_reviews -o kubernetes -l python
+```
+ 
+which would produce the following output
 
 ```shell
-python pr_reviews.py --org "my-org" --start-date "2021-01-01" --end-date "2021-12-31"
+user                   total
+---------------------  --
+user1                  26
+user2                  18
+user3                  15
+```
+This output shows the number of reviews that each user has carried out in the
+time period for the repositories that have python as a language specified.
+
+The authors intent is to provide basic statistics about who is carrying out 
+reviews over a period of time so that the organization can better understand
+who is contributing to the review process.
+
+A comma separated list of languages can be provided to filter the repositories
+that are included in the statistics. If no languages are provided then all of
+the repositories will be included in the statistics.
+
+multiple languages:
+```bash
+pr_reviews -o kubernetes -l python,go
 ```
 
-This program uses your local environment to authenticate with github using the
-GITHUB_TOKEN environment variable.
-
-## Development
-
-### linting
-```shell
-poetry run black .
+All languages:
+```bash
+pr_reviews -o kubernetes
 ```
-### local development
-```shell
-python -m pr_reviews.main --help
+
+Specifying the time frame:
+```bash
+pr_reviews -o kubernetes -l python -s 2021-01-01 -e 2021-01-31
 ```
+
+## Options 
+
+* -o, --organization The Github organization that you want to query
+* -l, --languages  A comma separated list of languages that you want to include
+* -s, --start-date The start date for the time frame that you want to query (optional)
+* -e, --end-date The end date for the time frame that you want to query (optional)
+* -h, --help Show this message and exit
