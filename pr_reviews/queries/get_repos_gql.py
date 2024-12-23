@@ -5,7 +5,6 @@ import requests
 from pr_reviews.queries import TIMEOUT
 from pr_reviews.queries.local_exceptions import GitHubTokenNotDefinedError
 
-
 # exceptions.py
 
 
