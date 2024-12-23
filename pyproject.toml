@@ -34,10 +34,8 @@ pr-reviews = "pr_reviews.main:main"
 line-length = 79
 exclude = [
     "venv",
-    "pr_reviews/cli/__init__.py",
-    "pr_reviews/queries/__init__.py",
+    "pr_reviews/**/__init__.py",
     "tests/__init__.py",
-    "pr_reviews/__init__.py"
 ]
 
 [tool.ruff.lint]
