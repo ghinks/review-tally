@@ -49,6 +49,8 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     return [
         repo["name"]
         for repo in data["data"]["organization"]["repositories"]["nodes"]
-        for node in repo["languages"]["nodes"]
-        if node["name"].lower() in [language.lower() for language in languages]
+        if not languages or any(
+            node["name"].lower() in
+                [language.lower() for language in languages]
+            for node in repo["languages"]["nodes"])
     ]
