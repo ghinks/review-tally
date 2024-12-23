@@ -1,19 +1,16 @@
 # import argparse and create a function to parse command line arguments
 # and return the parsed arguments, which will be used by the main function
-# to get the start and end dates for the pull requests and the organization name
+# to get the start and end dates for the pull requests and the organization
+# name
 
 import argparse
-from datetime import datetime, timedelta
+import sys
+from datetime import datetime, timedelta, timezone
 
 
 def parse_cmd_line() -> [str, datetime, datetime, list[str]]:
-    """Parse command line arguments
-
-    :return:
-    organization name, start date, end date, language
-    """
     description = """Get pull requests for the organization between dates
-    and the reviewers for each pull request. The environment must declare 
+    and the reviewers for each pull request. The environment must declare
     a GTIHUB_TOKEN variable with a valid GitHub token.
     """
     org_help = "Organization name"
@@ -22,10 +19,11 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:
     language_selection = "Select the language to filter the pull requests"
     parser = argparse.ArgumentParser(description=description)
     # these arguments are required
-    parser.add_argument("-o", "--org", required=True, help=org_help)
+    parser.add_argument("-o", "--org", required=True,
+                        help=org_help)
     date_format = "%Y-%m-%d"
-    two_weeks_ago = datetime.now() - timedelta(days=14)
-    today = datetime.now()
+    two_weeks_ago = datetime.now(tz=timezone.utc) - timedelta(days=14)
+    today = datetime.now(tz=timezone.utc)
     parser.add_argument(
         "-s",
         "--start_date",
@@ -41,20 +39,27 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:
         default=today.strftime(date_format),
     )
     # add the language selection argument
-    parser.add_argument("-l", "--language", required=False, help=language_selection)
+    parser.add_argument("-l", "--language", required=False,
+                        help=language_selection)
     args = parser.parse_args()
     # catch ValueError if the date format is not correct
     try:
         if args.start_date:
-            start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
+            start_date = ((
+                datetime.
+                    strptime(args.start_date, "%Y-%m-%d")).
+                          replace(tzinfo=timezone.utc))
         if args.end_date:
-            end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
+            end_date = ((
+                    datetime.
+                        strptime(args.end_date, "%Y-%m-%d")).
+                           replace(tzinfo=timezone.utc))
     except ValueError as e:
-        print("Error:", e)
-        exit(1)
+        print("Error:", e) # noqa: T201
+        sys.exit(1)
     if start_date > end_date:
-        print("Error: Start date must be before end date")
-        exit(1)
+        print("Error: Start date must be before end date") # noqa: T201
+        sys.exit(1)
     # if the language arg has comma separated values, split them
     languages = [args.language]
     if args.language and "," in args.language:
