@@ -1,6 +1,7 @@
+import os
 import unittest
 from unittest.mock import Mock, patch
-import os
+
 from pr_reviews.queries.get_repos_gql import get_repos_by_language
 
 
