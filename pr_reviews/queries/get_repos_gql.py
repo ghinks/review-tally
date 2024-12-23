@@ -5,7 +5,6 @@ import requests
 from pr_reviews.queries import TIMEOUT
 from pr_reviews.queries.local_exceptions import GitHubTokenNotDefinedError
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 # exceptions.py
 
@@ -13,6 +12,9 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     # check for github_token and raise an exception if it
     # is not defined
+
+    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
     if GITHUB_TOKEN is None:
         raise GitHubTokenNotDefinedError
     url = "https://api.github.com/graphql"
