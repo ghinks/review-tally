@@ -61,7 +61,10 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:
         print("Error: Start date must be before end date") # noqa: T201
         sys.exit(1)
     # if the language arg has comma separated values, split them
-    languages = [args.language]
-    if args.language and "," in args.language:
+    if args.language is None:
+        languages = []
+    elif args.language and "," in args.language:
         languages = args.language.split(",")
+    else:
+        languages = [args.language]
     return args.org, start_date, end_date, languages
