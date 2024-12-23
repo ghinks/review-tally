@@ -90,7 +90,7 @@ def main() -> None:
     # convert the dictionary to a list of lists and
     #   sort by the number of PRs reviewed
     table = sorted(table, key=lambda x: x[1], reverse=True)
-    print(tabulate(table))  # noqa: T201
+    print(tabulate(table, ["User", "total"]))  # noqa: T201
 
 
 if __name__ == "__main__":
