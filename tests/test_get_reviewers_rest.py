@@ -1,40 +1,41 @@
-# Python
 import json
-import pytest
-import unittest
-from unittest.mock import AsyncMock, patch
+import os
+from typing import Callable, Any
+from unittest.mock import patch
+
 import aiohttp
-import asyncio
-import os
-
+import pytest
 from aioresponses import aioresponses
+from pr_reviews.queries.get_reviewers_rest import fetch
 
-from pr_reviews.queries.get_reviewers_rest import (fetch, fetch_batch,
-                                                   get_reviewers_for_pull_requests)
-from tests.fixtures.fixtures_reviews_response import read_reviews_file, \
-    get_reviews_url
+@pytest.fixture
+def read_reviews_file():
+    # assume the reviews_response.json file is in the tests/fixtures directory
+    with open("tests/fixtures/reviews_response.json") as file:
+        return json.load(file)
 
-import asyncio
-import os
-
-
-class TestGetReviewersRest(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(TestGetReviewersRest, self).__init__(*args, **kwargs)
-        self.REVIEWS_RESPONSE = read_reviews_file()
-
-    @pytest.mark.asyncio
-    @patch.dict(os.environ, {"GITHUB_TOKEN": "test_token"})
-    async def test_fetch(self):
-        with aioresponses() as mock_get:
-            url = get_reviews_url("expressjs",
-                              "express",
-                              1)
-            mock_get.get(url, status=200, payload=self.REVIEWS_RESPONSE)
-            response = await fetch(url)
-            assert response == self.REVIEWS_RESPONSE
+@pytest.fixture
+def get_reviews_url():
+    def _get_reviews_url(owner: str, repo: str, pull_number: int) -> str:
+        url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/reviews"
+        return url
+    return _get_reviews_url
 
 
+@pytest.fixture
+def mock_aioresponse():
+    with aioresponses() as m:
+        yield m
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.asyncio
+@patch.dict(os.environ, {"GITHUB_TOKEN": "test_token"})
+async def test_get_reviewers_success(read_reviews_file, get_reviews_url, mock_aioresponse):
+    url = get_reviews_url("expressjs", "express", 1)
+    mock_aioresponse.get(
+        url,
+        status=200,
+        payload=read_reviews_file
+    )
+    async with aiohttp.ClientSession() as client:
+        response = await fetch(client, url)
+        assert response == read_reviews_file
