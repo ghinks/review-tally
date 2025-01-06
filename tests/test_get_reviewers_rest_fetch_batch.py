@@ -3,13 +3,12 @@ import json
 import unittest
 from pathlib import Path
 
-import aiohttp
 from aioresponses import aioresponses
 
-from pr_reviews.queries.get_reviewers_rest import fetch
+from pr_reviews.queries.get_reviewers_rest import fetch_batch
 
 
-class TestFetchJson(unittest.TestCase):
+class TestFetchBatch(unittest.TestCase):
     def read_reviews_file(self) -> str:
         # assume the reviews_response.json file is in
         # the tests/fixtures directory
@@ -17,18 +16,22 @@ class TestFetchJson(unittest.TestCase):
             return json.dumps(json.load(file))
 
     def get_reviews_url(self, owner: str, repo: str, pull_number: int) -> str:
-            return ("https://api.github.com/repos/"
-                   f"{owner}/{repo}/pulls/{pull_number}/reviews")
+        return ("https://api.github.com/repos/"
+                f"{owner}/{repo}/pulls/{pull_number}/reviews")
 
     @aioresponses()
     def test_fetch_json(self, mocked: aioresponses) -> None:
-        url = self.get_reviews_url("expressjs", "express", 1)
         payload = self.read_reviews_file()
-        mocked.get(url, status=200, payload=payload)
+        urls =[]
+        for pull_number in range(2):
+            url = self.get_reviews_url("expressjs",
+                                       "express",
+                                       pull_number)
+            urls.append(url)
+            mocked.get(url, status=200, payload=payload)
 
         async def run_test() -> None:
-            async with aiohttp.ClientSession() as session:
-                    result = await fetch(session,url)
-                    assert result == payload
+            result = await fetch_batch(urls)
+            assert result == [payload, payload]
 
         asyncio.run(run_test())
