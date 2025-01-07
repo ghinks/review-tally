@@ -7,23 +7,14 @@ import aiohttp
 from aioresponses import aioresponses
 
 from pr_reviews.queries.get_reviewers_rest import fetch
+from tests.utils import read_reviews_file, get_reviews_url
 
 
 class TestFetch(unittest.TestCase):
-    def read_reviews_file(self) -> str:
-        # assume the reviews_response.json file is in
-        # the tests/fixtures directory
-        with Path("tests/fixtures/reviews_response.json").open("r") as file:
-            return json.dumps(json.load(file))
-
-    def get_reviews_url(self, owner: str, repo: str, pull_number: int) -> str:
-            return ("https://api.github.com/repos/"
-                   f"{owner}/{repo}/pulls/{pull_number}/reviews")
-
     @aioresponses()
     def test_fetch_json(self, mocked: aioresponses) -> None:
-        url = self.get_reviews_url("expressjs", "express", 1)
-        payload = self.read_reviews_file()
+        url = get_reviews_url("expressjs", "express", 1)
+        payload = read_reviews_file()
         mocked.get(url, status=200, payload=payload)
 
         async def run_test() -> None:
