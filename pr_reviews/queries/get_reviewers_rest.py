@@ -12,18 +12,18 @@ if not HTTPS_PROXY:
     HTTPS_PROXY = os.getenv("https_proxy")
 
 
-async def fetch(session: aiohttp.ClientSession, url: str) -> dict[str, str]:
+async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, str]:
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
     if HTTPS_PROXY:
-        async with session.get(url,
-                               headers=headers,
-                               proxy=HTTPS_PROXY) as response:
+        async with client.get(url,
+                              headers=headers,
+                              proxy=HTTPS_PROXY) as response:
             return await response.json()
     else:
-        async with session.get(url, headers=headers) as response:
+        async with client.get(url, headers=headers) as response:
             return await response.json()
 
 
