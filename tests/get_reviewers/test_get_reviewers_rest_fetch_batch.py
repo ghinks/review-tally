@@ -4,7 +4,8 @@ import unittest
 from aioresponses import aioresponses
 
 from pr_reviews.queries.get_reviewers_rest import fetch_batch
-from tests.utils import read_reviews_file, get_reviews_url
+from tests.utils import get_reviews_url, read_reviews_file
+
 
 class TestFetchBatch(unittest.TestCase):
     @aioresponses()

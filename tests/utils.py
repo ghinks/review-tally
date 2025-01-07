@@ -1,6 +1,7 @@
 # Python
-from pathlib import Path
 import json
+from pathlib import Path
+
 
 def read_reviews_file() -> str:
     # assume the reviews_response.json file is in the tests/fixtures directory

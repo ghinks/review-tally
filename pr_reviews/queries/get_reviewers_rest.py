@@ -42,5 +42,4 @@ def get_reviewers_for_pull_requests(
         for pull_number in pull_numbers
     ]
     reviewers = asyncio.run(fetch_batch(urls))
-    # print(reviewers)
     return [item["user"] for sublist in reviewers for item in sublist]

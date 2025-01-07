@@ -1,13 +1,11 @@
 import asyncio
-import json
 import unittest
-from pathlib import Path
 
 import aiohttp
 from aioresponses import aioresponses
 
 from pr_reviews.queries.get_reviewers_rest import fetch
-from tests.utils import read_reviews_file, get_reviews_url
+from tests.utils import get_reviews_url, read_reviews_file
 
 
 class TestFetch(unittest.TestCase):

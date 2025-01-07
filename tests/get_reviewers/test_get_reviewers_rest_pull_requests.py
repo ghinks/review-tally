@@ -1,14 +1,17 @@
-import asyncio
 import unittest
 
 from aioresponses import aioresponses
-from pr_reviews.queries.get_reviewers_rest import get_reviewers_for_pull_requests
-from tests.utils import read_reviews_file, get_reviews_url
+
+from pr_reviews.queries.get_reviewers_rest import (
+    get_reviewers_for_pull_requests,
+)
+from tests.utils import get_reviews_url, read_reviews_file
+
 
 class TestGetReviewers(unittest.TestCase):
     OWNER = "expressjs"
     REPO = "express"
-    PULL_REQUESTS = [1, 2]
+    PULL_REQUESTS: tuple[int, ...] = (1, 2)
     @aioresponses()
     def test_get_reviewers(self, mocked: aioresponses) -> None:
         payload = read_reviews_file()
@@ -23,7 +26,6 @@ class TestGetReviewers(unittest.TestCase):
         results = get_reviewers_for_pull_requests(self.OWNER,
                                                        self.REPO,
                                                        self.PULL_REQUESTS)
-        print(results[0])
-        assert results[0]['id'] == 1
+        assert results[0]["id"] == 1
 
 

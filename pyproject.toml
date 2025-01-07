@@ -39,6 +39,7 @@ exclude = [
     "venv",
     "pr_reviews/**/__init__.py",
     "tests/__init__.py",
+    "tests/get_reviewers/__init__.py"
 ]
 
 [tool.ruff.lint]
