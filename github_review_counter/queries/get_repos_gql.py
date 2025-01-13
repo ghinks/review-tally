@@ -2,8 +2,10 @@ import os
 
 import requests
 
-from pr_reviews.queries import TIMEOUT
-from pr_reviews.queries.local_exceptions import GitHubTokenNotDefinedError
+from github_review_counter.queries import TIMEOUT
+from github_review_counter.queries.local_exceptions import (
+    GitHubTokenNotDefinedError,
+)
 
 # exceptions.py
 

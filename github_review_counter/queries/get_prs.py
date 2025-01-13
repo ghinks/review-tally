@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from pr_reviews.queries import TIMEOUT
+from github_review_counter.queries import TIMEOUT
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 

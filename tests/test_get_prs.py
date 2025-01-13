@@ -2,7 +2,9 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
-from pr_reviews.queries.get_prs import get_pull_requests_between_dates
+from github_review_counter.queries.get_prs import (
+    get_pull_requests_between_dates,
+)
 
 
 class TestGetPullRequestsBetweenDates(unittest.TestCase):
