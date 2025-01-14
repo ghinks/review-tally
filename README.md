@@ -1,4 +1,4 @@
-# pr-reviews
+# review-tally
 
 This tool is intended to retrieve basic statics about the reviews of pull
 requests for a GitHub organization in a given time frame. The default time
@@ -7,7 +7,7 @@ have specific languages when specified.
 
 basic usage:
 ```bash
-reviewtally -o kubernetes -l python
+review-tally -o kubernetes -l python
 ```
  
 which would produce the following output
@@ -32,17 +32,17 @@ the repositories will be included in the statistics.
 
 multiple languages:
 ```bash
-reviewtally -o kubernetes -l python,go
+review-tally -o kubernetes -l python,go
 ```
 
 All languages:
 ```bash
-reviewtally -o kubernetes
+review-tally -o kubernetes
 ```
 
 Specifying the time frame:
 ```bash
-reviewtally -o kubernetes -l python -s 2021-01-01 -e 2021-01-31
+review-tally -o kubernetes -l python -s 2021-01-01 -e 2021-01-31
 ```
 
 ## Options 
