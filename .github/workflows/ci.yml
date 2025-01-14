@@ -26,3 +26,6 @@ jobs:
       - name: run unit tests
         run: |
           poetry run pytest
+      - name: build package
+        run: |
+          poetry build
