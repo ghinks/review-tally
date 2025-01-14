@@ -2,11 +2,11 @@ import os
 import unittest
 from unittest.mock import Mock, patch
 
-from github_review_counter.queries.get_repos_gql import get_repos_by_language
+from reviewtally.queries.get_repos_gql import get_repos_by_language
 
 
 class TestGetReposByLanguage(unittest.TestCase):
-    @patch("github_review_counter.queries.get_repos_gql.requests.post")
+    @patch("reviewtally.queries.get_repos_gql.requests.post")
     @patch.dict(os.environ, {"GITHUB_TOKEN": "test_token"})
     def test_get_repos_by_language(self, mock_post) -> None:  # noqa: ANN001
         # Mock the response from the GitHub API

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "github-review-counter"
+name = "review_tally"
 version = "0.1.0"
 description = "A tool to discover who is reviewing your organization's PRs"
 authors = ["ghinks <ghinks@yahoo.com>"]
@@ -7,7 +7,7 @@ license = "Apache"
 repository = "https://github.com/ghinks/github-pr-review-counter"
 readme = "README.md"
 packages = [
-    { include = "github_review_counter/**/*" }
+    { include = "reviewtally/**/*" }
 ]
 
 [tool.poetry.dependencies]
@@ -31,13 +31,13 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-github-review-counter = "github_review_counter.main:main"
+review-tally = "reviewtally.main:main"
 
 [tool.ruff]
 line-length = 79
 exclude = [
     "venv",
-    "github_review_counter/**/__init__.py",
+    "reviewtally/**/__init__.py",
     "tests/__init__.py",
     "tests/get_reviewers/__init__.py"
 ]

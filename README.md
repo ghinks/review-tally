@@ -7,7 +7,7 @@ have specific languages when specified.
 
 basic usage:
 ```bash
-github_review_counter -o kubernetes -l python
+reviewtally -o kubernetes -l python
 ```
  
 which would produce the following output
@@ -32,17 +32,17 @@ the repositories will be included in the statistics.
 
 multiple languages:
 ```bash
-github_review_counter -o kubernetes -l python,go
+reviewtally -o kubernetes -l python,go
 ```
 
 All languages:
 ```bash
-github_review_counter -o kubernetes
+reviewtally -o kubernetes
 ```
 
 Specifying the time frame:
 ```bash
-github_review_counter -o kubernetes -l python -s 2021-01-01 -e 2021-01-31
+reviewtally -o kubernetes -l python -s 2021-01-01 -e 2021-01-31
 ```
 
 ## Options 
