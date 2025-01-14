@@ -2,7 +2,7 @@ import time
 
 from tabulate import tabulate
 
-from github_review_counter.queries.local_exceptions import (
+from reviewtally.queries.local_exceptions import (
     GitHubTokenNotDefinedError,
     LoginNotFoundError,
 )

@@ -3,7 +3,7 @@ import unittest
 
 from aioresponses import aioresponses
 
-from github_review_counter.queries.get_reviewers_rest import fetch_batch
+from reviewtally.queries.get_reviewers_rest import fetch_batch
 from tests.utils import get_reviews_url, read_reviews_file
 
 

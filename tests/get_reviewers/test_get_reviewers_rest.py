@@ -8,7 +8,7 @@ import aiohttp
 import pytest
 from aioresponses import aioresponses
 
-from github_review_counter.queries.get_reviewers_rest import fetch
+from reviewtally.queries.get_reviewers_rest import fetch
 
 
 @pytest.fixture

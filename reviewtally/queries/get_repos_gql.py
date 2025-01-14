@@ -2,8 +2,8 @@ import os
 
 import requests
 
-from github_review_counter.queries import TIMEOUT
-from github_review_counter.queries.local_exceptions import (
+from reviewtally.queries import TIMEOUT
+from reviewtally.queries.local_exceptions import (
     GitHubTokenNotDefinedError,
 )
 
