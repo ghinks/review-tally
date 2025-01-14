@@ -1,13 +1,13 @@
 # review-tally
 
-This tool is intended to retrieve basic statics about the reviews of pull
+This tool is intended to retrieve a basic review count for the pull
 requests for a GitHub organization in a given time frame. The default time
-from is 2 weeks. The tool will retrieve statistics only on repositories that
-have specific languages when specified.
+from is 2 weeks. The tool will retrieve statistics only on all repositories in
+the specified organization unless there are specific languages specified.
 
 basic usage:
 ```bash
-review-tally -o kubernetes -l python
+review-tally -o expressjs -l javascript
 ```
  
 which would produce the following output
@@ -21,10 +21,6 @@ user3                  15
 ```
 This output shows the number of reviews that each user has carried out in the
 time period for the repositories that have python as a language specified.
-
-The authors intent is to provide basic statistics about who is carrying out 
-reviews over a period of time so that the organization can better understand
-who is contributing to the review process.
 
 A comma separated list of languages can be provided to filter the repositories
 that are included in the statistics. If no languages are provided then all of
