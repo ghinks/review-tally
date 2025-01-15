@@ -25,7 +25,7 @@ jobs:
           poetry run ruff check
       - name: run mypy
         run: |
-          poetry run mypy --python-version=${{ matrix.python-version }}
+          poetry run mypy reviewtally --python-version=${{ matrix.python-version }}
       - name: run unit tests
         run: |
           poetry run pytest
