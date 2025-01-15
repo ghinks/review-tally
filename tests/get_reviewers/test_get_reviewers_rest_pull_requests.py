@@ -2,7 +2,7 @@ import unittest
 
 from aioresponses import aioresponses
 
-from pr_reviews.queries.get_reviewers_rest import (
+from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_for_pull_requests,
 )
 from tests.utils import get_reviews_url, read_reviews_file

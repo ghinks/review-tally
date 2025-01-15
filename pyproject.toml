@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "pr-reviews"
+name = "review_tally"
 version = "0.1.0"
 description = "A tool to discover who is reviewing your organization's PRs"
 authors = ["ghinks <ghinks@yahoo.com>"]
 license = "Apache"
-repository = "https://github.com/ghinks/pr-reviews"
+repository = "https://github.com/ghinks/github-pr-review-counter"
 readme = "README.md"
 packages = [
-    { include = "pr_reviews/**/*" }
+    { include = "reviewtally/**/*" }
 ]
 
 [tool.poetry.dependencies]
@@ -31,13 +31,13 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-pr-reviews = "pr_reviews.main:main"
+review-tally = "reviewtally.main:main"
 
 [tool.ruff]
 line-length = 79
 exclude = [
     "venv",
-    "pr_reviews/**/__init__.py",
+    "reviewtally/**/__init__.py",
     "tests/__init__.py",
     "tests/get_reviewers/__init__.py"
 ]

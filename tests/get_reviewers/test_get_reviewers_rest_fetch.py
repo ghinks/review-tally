@@ -4,7 +4,7 @@ import unittest
 import aiohttp
 from aioresponses import aioresponses
 
-from pr_reviews.queries.get_reviewers_rest import fetch
+from reviewtally.queries.get_reviewers_rest import fetch
 from tests.utils import get_reviews_url, read_reviews_file
 
 
