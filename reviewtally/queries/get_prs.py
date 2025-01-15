@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from typing import Any
 
 import requests
 
@@ -16,20 +17,19 @@ def get_pull_requests_between_dates(
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-    params = {
+    params: dict[str, Any]= {
         "state": "all",
         "sort": "created_at",
-        "direction": "desc","per_page": 30,
+        "direction": "desc",
+        "per_page": 30,
     }
     pull_requests = []
     page = 1
 
     while True:
-        response =(
-            requests.get(url,
-                         headers=headers,
-                         params={**params, "page": page},
-                         timeout=TIMEOUT))
+        params = {**params, "page": page}
+        response = requests.get(url, headers=headers,
+                                params=params , timeout=TIMEOUT)
         response.raise_for_status()
         prs = response.json()
         if not prs:

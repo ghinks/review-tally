@@ -30,7 +30,7 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, str]:
 async def fetch_batch(urls: list[str]) -> tuple[Any]:
     async with aiohttp.ClientSession() as session:
         tasks = [fetch(session, url) for url in urls]
-        return await asyncio.gather(*tasks)
+        return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
 
 def get_reviewers_for_pull_requests(
