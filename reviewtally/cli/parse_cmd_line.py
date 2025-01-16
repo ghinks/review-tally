@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 
-def parse_cmd_line() -> [str, datetime, datetime, list[str]]:
+def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[valid-type]
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare
     a GTIHUB_TOKEN variable with a valid GitHub token.

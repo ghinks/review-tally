@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 from tabulate import tabulate
 
@@ -29,7 +30,7 @@ def main() -> None:
     # map containing the reviewer name and the number of pull requests reviewed
     start_time = time.time()
     timestamped_print("Starting process")
-    reviewer_prs = {}
+    reviewer_prs: dict[Any, int] = {}
     org_name, start_date, end_date, languages = parse_cmd_line()
     try:
         timestamped_print(
