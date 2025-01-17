@@ -5,6 +5,7 @@ import requests
 from reviewtally.queries import TIMEOUT
 from reviewtally.queries.local_exceptions import (
     GitHubTokenNotDefinedError,
+    NoGitHubOrgError,
 )
 
 # exceptions.py
@@ -48,6 +49,8 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     )
     response.raise_for_status()
     data = response.json()
+    if data["data"]["organization"] is None:
+        raise NoGitHubOrgError(org)
     # Filter repositories by language
     return [
         repo["name"]

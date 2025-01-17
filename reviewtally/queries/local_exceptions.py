@@ -10,3 +10,10 @@ class LoginNotFoundError(ValueError):
     def __init__(self) -> None:
         """Initialize the exception string."""
         super().__init__("Login property not found in reviewer")
+
+class NoGitHubOrgError(ValueError):
+    """Exception raised when the GitHub organization is not found."""
+
+    def __init__(self, reponame: str) -> None:
+        """Initialize the exception string."""
+        super().__init__(f"GitHub {reponame} organization not found")
