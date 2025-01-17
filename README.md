@@ -5,6 +5,10 @@ requests for a GitHub organization in a given time frame. The default time
 from is 2 weeks. The tool will retrieve statistics only on all repositories in
 the specified organization unless there are specific languages specified.
 
+This tool uses the GitHub API to retrieve the data. The tool requires that 
+you have your GitHub token set as an environment variable. The environment
+variable should be named `GITHUB_TOKEN`.
+
 basic usage:
 ```bash
 review-tally -o expressjs -l javascript
@@ -28,17 +32,17 @@ the repositories will be included in the statistics.
 
 multiple languages:
 ```bash
-review-tally -o kubernetes -l python,go
+review-tally -o crossplane -l python,go
 ```
 
 All languages:
 ```bash
-review-tally -o kubernetes
+review-tally -o expressjs
 ```
 
 Specifying the time frame:
 ```bash
-review-tally -o kubernetes -l python -s 2021-01-01 -e 2021-01-31
+review-tally -o expressjs -l javascript -s 2021-01-01 -e 2021-01-31
 ```
 
 ## Options 

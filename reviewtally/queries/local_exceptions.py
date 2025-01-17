@@ -3,7 +3,8 @@ class GitHubTokenNotDefinedError(Exception):
 
     def __init__(self) -> None:
         """Initialize the exception string."""
-        super().__init__("Missing GitHub token")
+        super().__init__("Missing GitHub token, please set the "
+                         "GITHUB_TOKEN environment variable")
 class LoginNotFoundError(ValueError):
     """Exception raised when the login is not found in the reviewer."""
 
