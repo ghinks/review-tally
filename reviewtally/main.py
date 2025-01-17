@@ -14,7 +14,7 @@ from .queries.get_prs import get_pull_requests_between_dates
 from .queries.get_repos_gql import get_repos_by_language
 from .queries.get_reviewers_rest import get_reviewers_for_pull_requests
 
-DEBUG_FLAG = True
+DEBUG_FLAG = False
 
 
 def timestamped_print(message: str) -> None:
