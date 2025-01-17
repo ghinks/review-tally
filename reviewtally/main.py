@@ -6,6 +6,7 @@ from tabulate import tabulate
 from reviewtally.queries.local_exceptions import (
     GitHubTokenNotDefinedError,
     LoginNotFoundError,
+    NoGitHubOrgError,
 )
 
 from .cli.parse_cmd_line import parse_cmd_line
@@ -13,7 +14,7 @@ from .queries.get_prs import get_pull_requests_between_dates
 from .queries.get_repos_gql import get_repos_by_language
 from .queries.get_reviewers_rest import get_reviewers_for_pull_requests
 
-DEBUG_FLAG = False
+DEBUG_FLAG = True
 
 
 def timestamped_print(message: str) -> None:
@@ -39,6 +40,9 @@ def main() -> None:
         )
         repo_names = get_repos_by_language(org_name, languages)
     except GitHubTokenNotDefinedError as e:
+        print("Error:", e)  # noqa: T201
+        return
+    except NoGitHubOrgError as e:
         print("Error:", e)  # noqa: T201
         return
     timestamped_print(
