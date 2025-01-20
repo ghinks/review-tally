@@ -32,8 +32,15 @@ jobs:
           git add pyproject.toml
           git commit -m "Increment version number"
           git tag $(poetry version -s)
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+
+      - name: Push changes and tags
+        run: |
           git push origin --tags
           git push origin HEAD
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
 
       - name: Build the package
         run: |
