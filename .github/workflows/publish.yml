@@ -37,8 +37,8 @@ jobs:
 
       - name: Push changes and tags
         run: |
-          git push origin HEAD
-          git push origin refs/tags/$(poetry version -s)
+          git push origin HEAD:refs/heads/main
+          git push origin --tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
