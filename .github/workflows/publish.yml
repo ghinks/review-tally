@@ -48,6 +48,7 @@ jobs:
 
       - name: Publish to PyPI
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN_REVIEW_TALLY }}
+          POETRY_HTTP_BASIC_PYPI_USERNAME: __token__
+          POETRY_HTTP_BASIC_PYPI_PASSWORD: ${{ secrets.PYPI_TOKEN_REVIEW_TALLY }}
         run: |
           poetry publish --build --verbose
