@@ -47,7 +47,7 @@ jobs:
           poetry build
       - name: Configure Poetry for PyPI
         run: |
-          poetry config pypi-token.pypi  ${{ secrets.PYPI_TOKEN_REVIEW_TALLY }}
+          poetry config pypi-token.pypi  "${{ secrets.PYPI_TOKEN_REVIEW_TALLY }}"
       - name: Publish to PyPI
         run: |
           poetry publish --build --verbose
