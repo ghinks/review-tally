@@ -1,23 +1,13 @@
-name: "Dependabot updates"
-
-on:
-  schedule:
-    - cron: "0 0 * * 0" # Runs every Sunday at midnight
-  workflow_dispatch:
-
-jobs:
-  dependabot:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Dependabot updates
-        uses: dependabot/dependabot-core@v2
-        with:
-          package-ecosystem: "pip"
-          directory: "/"
-          schedule-interval: "monthly"
-          commit-message-prefix: "deps"
-          open-pull-requests-limit: 10
-          rebase-strategy: "disabled"
+# filepath: .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "deps"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    ignore:
+      - dependency-name: "python"
