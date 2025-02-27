@@ -4,9 +4,14 @@
 # name
 
 import argparse
+import importlib.metadata
 import sys
 from datetime import datetime, timedelta, timezone
 
+
+def print_toml_version() -> None:
+    version = importlib.metadata.version("review-tally")
+    print(f"Current version is {version}") # noqa: T201
 
 def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[valid-type]
     description = """Get pull requests for the organization between dates
@@ -19,7 +24,7 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[va
     language_selection = "Select the language to filter the pull requests"
     parser = argparse.ArgumentParser(description=description)
     # these arguments are required
-    parser.add_argument("-o", "--org", required=True,
+    parser.add_argument("-o", "--org", required=False,
                         help=org_help)
     date_format = "%Y-%m-%d"
     two_weeks_ago = datetime.now(tz=timezone.utc) - timedelta(days=14)
@@ -41,6 +46,11 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[va
     # add the language selection argument
     parser.add_argument("-l", "--language", required=False,
                         help=language_selection)
+    version_help = """
+    Print version and exit
+    """
+    parser.add_argument("-v", "--version", action="store_true",
+                        help=version_help)
     args = parser.parse_args()
     # catch ValueError if the date format is not correct
     try:
@@ -57,6 +67,9 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[va
     except ValueError as e:
         print("Error:", e) # noqa: T201
         sys.exit(1)
+    if args.version:
+        print_toml_version()
+        sys.exit(0)
     if start_date > end_date:
         print("Error: Start date must be before end date") # noqa: T201
         sys.exit(1)
