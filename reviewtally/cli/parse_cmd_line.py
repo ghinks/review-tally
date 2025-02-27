@@ -4,13 +4,14 @@
 # name
 
 import argparse
+import importlib.metadata
 import sys
 from datetime import datetime, timedelta, timezone
-import importlib.metadata
 
-def print_toml_version():
+
+def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
-    print(f"Current version is {version}")
+    print(f"Current version is {version}") # noqa: T201
 
 def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[valid-type]
     description = """Get pull requests for the organization between dates
@@ -68,7 +69,7 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[va
         sys.exit(1)
     if args.version:
         print_toml_version()
-        exit(0)
+        sys.exit(0)
     if start_date > end_date:
         print("Error: Start date must be before end date") # noqa: T201
         sys.exit(1)
