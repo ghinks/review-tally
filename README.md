@@ -52,3 +52,4 @@ review-tally -o expressjs -l javascript -s 2021-01-01 -e 2021-01-31
 * -s, --start-date The start date for the time frame that you want to query (optional)
 * -e, --end-date The end date for the time frame that you want to query (optional)
 * -h, --help Show this message and exit
+* -v, --version Show the version of the tool
