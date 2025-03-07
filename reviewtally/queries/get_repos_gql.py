@@ -12,9 +12,12 @@ from reviewtally.queries.local_exceptions import (
 
 
 def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
+    # check org and raise an exception if it is not defined
+    if not org:
+        raise NoGitHubOrgError(org)
+
     # check for github_token and raise an exception if it
     # is not defined
-
     github_token = os.getenv("GITHUB_TOKEN")
 
     if github_token is None:
