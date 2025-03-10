@@ -2,6 +2,7 @@ import time
 from typing import Any
 
 from tabulate import tabulate
+from tqdm import tqdm
 
 from reviewtally.queries.local_exceptions import (
     GitHubTokenNotDefinedError,
@@ -38,7 +39,7 @@ def main() -> None:
             f"Calling get_repos_by_language {time.time() - start_time:.2f} "
             "seconds",
         )
-        repo_names = get_repos_by_language(org_name, languages)
+        repo_names = tqdm(get_repos_by_language(org_name, languages))
     except GitHubTokenNotDefinedError as e:
         print("Error:", e)  # noqa: T201
         return
@@ -56,6 +57,7 @@ def main() -> None:
     # it is possible to take these asynchronous requests and
     # batch them to improve performance.
     # get all the repo names
+
     for repo in repo_names:
         timestamped_print(f"Processing {repo}")
         pull_requests = get_pull_requests_between_dates(
@@ -70,6 +72,7 @@ def main() -> None:
             f"{len(pull_requests)} pull requests",
         )
         pr_numbers = [pr["number"] for pr in pull_requests]
+        repo_names.set_description(f"Processing {org_name}/{repo}")
         # create batches of 5 pr_numbers
         pr_numbers_batched = [
             pr_numbers[i: i + BATCH_SIZE] for i in range(0, len(pr_numbers), 5)

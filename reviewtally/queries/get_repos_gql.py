@@ -2,7 +2,7 @@ import os
 
 import requests
 
-from reviewtally.queries import TIMEOUT
+from reviewtally.queries import GRAPHQL_TIMEOUT
 from reviewtally.queries.local_exceptions import (
     GitHubTokenNotDefinedError,
     NoGitHubOrgError,
@@ -48,7 +48,7 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
         url,
         headers=headers,
         json={"query": query, "variables": variables},
-        timeout=TIMEOUT,
+        timeout=GRAPHQL_TIMEOUT,
     )
     response.raise_for_status()
     data = response.json()

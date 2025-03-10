@@ -3,6 +3,9 @@ import os
 from typing import Any
 
 import aiohttp
+from aiohttp import ClientTimeout
+
+from reviewtally.queries import REVIEWERS_TIMEOUT
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 # get proxy settings from environment variables
@@ -28,7 +31,8 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, str]:
 
 
 async def fetch_batch(urls: list[str]) -> tuple[Any]:
-    async with aiohttp.ClientSession() as session:
+    timeout = ClientTimeout(total=REVIEWERS_TIMEOUT)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         tasks = [fetch(session, url) for url in urls]
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 

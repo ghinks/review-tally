@@ -4,7 +4,7 @@ from typing import Any
 
 import requests
 
-from reviewtally.queries import TIMEOUT
+from reviewtally.queries import GENERAL_TIMEOUT
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -29,7 +29,7 @@ def get_pull_requests_between_dates(
     while True:
         params = {**params, "page": page}
         response = requests.get(url, headers=headers,
-                                params=params , timeout=TIMEOUT)
+                                params=params, timeout=GENERAL_TIMEOUT)
         response.raise_for_status()
         prs = response.json()
         if not prs:
