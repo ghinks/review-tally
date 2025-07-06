@@ -25,12 +25,16 @@ class TestGetReviewersWithComments(unittest.TestCase):
     REVIEW_ID_81 = 81
 
     @aioresponses()
-    def test_get_reviewers_with_comments_success(self, mocked: aioresponses) -> None:
-        """Test successful retrieval of reviewers with comments"""
+    def test_get_reviewers_with_comments_success(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Test successful retrieval of reviewers with comments."""
         pull_numbers = [self.PULL_REQUEST_1]
 
         # Mock the reviews API call
-        reviews_url = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_1)
+        reviews_url = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
         reviews_data = read_reviews_file()
         mocked.get(reviews_url, status=200, payload=reviews_data)
 
@@ -50,15 +54,20 @@ class TestGetReviewersWithComments(unittest.TestCase):
         self.assertEqual(results[0]["user"]["login"], "octocat")
         self.assertEqual(results[0]["review_id"], self.REVIEW_ID_80)
         self.assertEqual(results[0]["pull_number"], self.PULL_REQUEST_1)
-        self.assertEqual(results[0]["comment_count"], 2)  # 2 comments in fixture
+        # 2 comments in fixture
+        self.assertEqual(results[0]["comment_count"], 2)
 
     @aioresponses()
-    def test_get_reviewers_with_comments_no_reviews(self, mocked: aioresponses) -> None:
-        """Test handling of pull requests with no reviews"""
+    def test_get_reviewers_with_comments_no_reviews(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Test handling of pull requests with no reviews."""
         pull_numbers = [self.PULL_REQUEST_1]
 
         # Mock empty reviews response
-        reviews_url = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_1)
+        reviews_url = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
         empty_reviews = read_empty_reviews_file()
         mocked.get(reviews_url, status=200, payload=empty_reviews)
 
@@ -70,12 +79,16 @@ class TestGetReviewersWithComments(unittest.TestCase):
         self.assertEqual(len(results), 0)
 
     @aioresponses()
-    def test_get_reviewers_with_comments_no_comments(self, mocked: aioresponses) -> None:
-        """Test reviews that exist but have no comments"""
+    def test_get_reviewers_with_comments_no_comments(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Test reviews that exist but have no comments."""
         pull_numbers = [self.PULL_REQUEST_1]
 
         # Mock the reviews API call
-        reviews_url = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_1)
+        reviews_url = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
         reviews_data = read_reviews_file()
         mocked.get(reviews_url, status=200, payload=reviews_data)
 
@@ -96,17 +109,23 @@ class TestGetReviewersWithComments(unittest.TestCase):
         self.assertEqual(results[0]["user"]["login"], "octocat")
 
     @aioresponses()
-    def test_get_reviewers_with_comments_multiple_prs(self, mocked: aioresponses) -> None:
-        """Test multiple pull requests"""
+    def test_get_reviewers_with_comments_multiple_prs(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Test multiple pull requests."""
         pull_numbers = [self.PULL_REQUEST_1, self.PULL_REQUEST_2]
 
         # Mock reviews for first PR
-        reviews_url_1 = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_1)
+        reviews_url_1 = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
         reviews_data = read_reviews_file()
         mocked.get(reviews_url_1, status=200, payload=reviews_data)
 
         # Mock reviews for second PR
-        reviews_url_2 = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_2)
+        reviews_url_2 = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_2,
+        )
         mocked.get(reviews_url_2, status=200, payload=reviews_data)
 
         # Mock comments for first PR
@@ -133,12 +152,16 @@ class TestGetReviewersWithComments(unittest.TestCase):
         self.assertIn(self.PULL_REQUEST_2, pr_numbers)
 
     @aioresponses()
-    def test_get_reviewers_with_comments_multiple_reviewers(self, mocked: aioresponses) -> None:
-        """Test pull request with multiple reviews from different users"""
+    def test_get_reviewers_with_comments_multiple_reviewers(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Test pull request with multiple reviews from different users."""
         pull_numbers = [self.PULL_REQUEST_1]
 
         # Mock multiple reviews response
-        reviews_url = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_1)
+        reviews_url = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
         multiple_reviews = read_multiple_reviews_file()
         mocked.get(reviews_url, status=200, payload=multiple_reviews)
 
@@ -164,27 +187,37 @@ class TestGetReviewersWithComments(unittest.TestCase):
         self.assertEqual(len(results), 2)
 
         # Check first reviewer (octocat) has comments
-        octocat_result = next(r for r in results if r["user"]["login"] == "octocat")
+        octocat_result = next(
+            r for r in results if r["user"]["login"] == "octocat"
+        )
         self.assertEqual(octocat_result["comment_count"], 2)
         self.assertEqual(octocat_result["review_id"], self.REVIEW_ID_80)
 
         # Check second reviewer (defunkt) has no comments
-        defunkt_result = next(r for r in results if r["user"]["login"] == "defunkt")
+        defunkt_result = next(
+            r for r in results if r["user"]["login"] == "defunkt"
+        )
         self.assertEqual(defunkt_result["comment_count"], 0)
         self.assertEqual(defunkt_result["review_id"], self.REVIEW_ID_81)
 
     @aioresponses()
-    def test_get_reviewers_with_comments_mixed_scenarios(self, mocked: aioresponses) -> None:
-        """Test mixed scenario: some PRs with reviews, some without"""
+    def test_get_reviewers_with_comments_mixed_scenarios(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Test mixed scenario: some PRs with reviews, some without."""
         pull_numbers = [self.PULL_REQUEST_1, self.PULL_REQUEST_2]
 
         # First PR has reviews with comments
-        reviews_url_1 = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_1)
+        reviews_url_1 = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
         reviews_data = read_reviews_file()
         mocked.get(reviews_url_1, status=200, payload=reviews_data)
 
         # Second PR has no reviews
-        reviews_url_2 = get_reviews_url(self.OWNER, self.REPO, self.PULL_REQUEST_2)
+        reviews_url_2 = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_2,
+        )
         empty_reviews = read_empty_reviews_file()
         mocked.get(reviews_url_2, status=200, payload=empty_reviews)
 
