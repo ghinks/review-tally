@@ -13,7 +13,9 @@ from reviewtally.queries.local_exceptions import (
 from .cli.parse_cmd_line import parse_cmd_line
 from .queries.get_prs import get_pull_requests_between_dates
 from .queries.get_repos_gql import get_repos_by_language
-from .queries.get_reviewers_rest import get_reviewers_for_pull_requests
+from .queries.get_reviewers_rest import (
+    get_reviewers_with_comments_for_pull_requests,
+)
 
 DEBUG_FLAG = False
 
@@ -32,7 +34,7 @@ def main() -> None:
     # map containing the reviewer name and the number of pull requests reviewed
     start_time = time.time()
     timestamped_print("Starting process")
-    reviewer_prs: dict[Any, int] = {}
+    reviewer_stats: dict[Any, dict[str, int]] = {}
     org_name, start_date, end_date, languages = parse_cmd_line()
     try:
         timestamped_print(
@@ -78,15 +80,25 @@ def main() -> None:
             pr_numbers[i: i + BATCH_SIZE] for i in range(0, len(pr_numbers), 5)
         ]
         for pr_numbers in pr_numbers_batched:
-            reviewers = get_reviewers_for_pull_requests(org_name, repo,
-                                                        pr_numbers)
-            for reviewer in reviewers:
-                if "login" not in reviewer:
+            reviewer_data = get_reviewers_with_comments_for_pull_requests(
+                org_name, repo, pr_numbers,
+            )
+            for review in reviewer_data:
+                user = review["user"]
+                if "login" not in user:
                     raise LoginNotFoundError
-                if reviewer["login"] in reviewer_prs:
-                    reviewer_prs[reviewer["login"]] += 1
-                else:
-                    reviewer_prs[reviewer["login"]] = 1
+
+                login = user["login"]
+                comment_count = review["comment_count"]
+
+                if login not in reviewer_stats:
+                    reviewer_stats[login] = {
+                        "reviews": 0,
+                        "comments": 0,
+                    }
+
+                reviewer_stats[login]["reviews"] += 1
+                reviewer_stats[login]["comments"] += comment_count
         timestamped_print(
             "Finished processing "
             f"{repo} {time.time() - start_time:.2f} seconds",
@@ -94,11 +106,14 @@ def main() -> None:
     # convert the dictionary to a list of lists and print out with tabulate
     timestamped_print(
         f"Printing results {time.time() - start_time:.2f} seconds")
-    table = [[k, v] for k, v in reviewer_prs.items()]
+    table = [
+        [login, stats["reviews"], stats["comments"]]
+        for login, stats in reviewer_stats.items()
+    ]
     # convert the dictionary to a list of lists and
     #   sort by the number of PRs reviewed
     table = sorted(table, key=lambda x: x[1], reverse=True)
-    print(tabulate(table, ["User", "total"]))  # noqa: T201
+    print(tabulate(table, ["User", "Reviews", "Comments"]))  # noqa: T201
 
 
 if __name__ == "__main__":
