@@ -23,6 +23,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
     PULL_REQUEST_2 = 13
     REVIEW_ID_80 = 80
     REVIEW_ID_81 = 81
+    EXPECTED_COMMENT_COUNT = 2
+    EXPECTED_NO_COMMENTS = 0
+    EXPECTED_SINGLE_RESULT = 1
+    EXPECTED_TWO_RESULTS = 2
 
     @aioresponses()
     def test_get_reviewers_with_comments_success(
@@ -50,12 +54,12 @@ class TestGetReviewersWithComments(unittest.TestCase):
         )
 
         # Assertions
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["user"]["login"], "octocat")
-        self.assertEqual(results[0]["review_id"], self.REVIEW_ID_80)
-        self.assertEqual(results[0]["pull_number"], self.PULL_REQUEST_1)
+        assert len(results) == self.EXPECTED_SINGLE_RESULT
+        assert results[0]["user"]["login"] == "octocat"
+        assert results[0]["review_id"] == self.REVIEW_ID_80
+        assert results[0]["pull_number"] == self.PULL_REQUEST_1
         # 2 comments in fixture
-        self.assertEqual(results[0]["comment_count"], 2)
+        assert results[0]["comment_count"] == self.EXPECTED_COMMENT_COUNT
 
     @aioresponses()
     def test_get_reviewers_with_comments_no_reviews(
@@ -76,7 +80,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
         )
 
         # Should return empty list when no reviews
-        self.assertEqual(len(results), 0)
+        assert len(results) == self.EXPECTED_NO_COMMENTS
 
     @aioresponses()
     def test_get_reviewers_with_comments_no_comments(
@@ -104,9 +108,9 @@ class TestGetReviewersWithComments(unittest.TestCase):
         )
 
         # Should have one result with 0 comments
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["comment_count"], 0)
-        self.assertEqual(results[0]["user"]["login"], "octocat")
+        assert len(results) == self.EXPECTED_SINGLE_RESULT
+        assert results[0]["comment_count"] == self.EXPECTED_NO_COMMENTS
+        assert results[0]["user"]["login"] == "octocat"
 
     @aioresponses()
     def test_get_reviewers_with_comments_multiple_prs(
@@ -146,10 +150,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
         )
 
         # Should have results for both PRs
-        self.assertEqual(len(results), 2)
+        assert len(results) == self.EXPECTED_TWO_RESULTS
         pr_numbers = [result["pull_number"] for result in results]
-        self.assertIn(self.PULL_REQUEST_1, pr_numbers)
-        self.assertIn(self.PULL_REQUEST_2, pr_numbers)
+        assert self.PULL_REQUEST_1 in pr_numbers
+        assert self.PULL_REQUEST_2 in pr_numbers
 
     @aioresponses()
     def test_get_reviewers_with_comments_multiple_reviewers(
@@ -184,21 +188,21 @@ class TestGetReviewersWithComments(unittest.TestCase):
         )
 
         # Should have results for both reviewers
-        self.assertEqual(len(results), 2)
+        assert len(results) == self.EXPECTED_TWO_RESULTS
 
         # Check first reviewer (octocat) has comments
         octocat_result = next(
             r for r in results if r["user"]["login"] == "octocat"
         )
-        self.assertEqual(octocat_result["comment_count"], 2)
-        self.assertEqual(octocat_result["review_id"], self.REVIEW_ID_80)
+        assert octocat_result["comment_count"] == self.EXPECTED_COMMENT_COUNT
+        assert octocat_result["review_id"] == self.REVIEW_ID_80
 
         # Check second reviewer (defunkt) has no comments
         defunkt_result = next(
             r for r in results if r["user"]["login"] == "defunkt"
         )
-        self.assertEqual(defunkt_result["comment_count"], 0)
-        self.assertEqual(defunkt_result["review_id"], self.REVIEW_ID_81)
+        assert defunkt_result["comment_count"] == self.EXPECTED_NO_COMMENTS
+        assert defunkt_result["review_id"] == self.REVIEW_ID_81
 
     @aioresponses()
     def test_get_reviewers_with_comments_mixed_scenarios(
@@ -233,9 +237,9 @@ class TestGetReviewersWithComments(unittest.TestCase):
         )
 
         # Should only have result for first PR
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["pull_number"], self.PULL_REQUEST_1)
-        self.assertEqual(results[0]["comment_count"], 2)
+        assert len(results) == self.EXPECTED_SINGLE_RESULT
+        assert results[0]["pull_number"] == self.PULL_REQUEST_1
+        assert results[0]["comment_count"] == self.EXPECTED_COMMENT_COUNT
 
 
 if __name__ == "__main__":
