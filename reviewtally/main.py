@@ -1,5 +1,4 @@
 import time
-from typing import Any
 
 from tabulate import tabulate
 from tqdm import tqdm
@@ -34,7 +33,7 @@ def main() -> None:
     # map containing the reviewer name and the number of pull requests reviewed
     start_time = time.time()
     timestamped_print("Starting process")
-    reviewer_stats: dict[Any, dict[str, int]] = {}
+    reviewer_stats: dict[str, dict[str, int]] = {}
     org_name, start_date, end_date, languages = parse_cmd_line()
     try:
         timestamped_print(
@@ -77,7 +76,8 @@ def main() -> None:
         repo_names.set_description(f"Processing {org_name}/{repo}")
         # create batches of 5 pr_numbers
         pr_numbers_batched = [
-            pr_numbers[i: i + BATCH_SIZE] for i in range(0, len(pr_numbers), 5)
+            pr_numbers[i: i + BATCH_SIZE]
+                for i in range(0, len(pr_numbers), BATCH_SIZE)
         ]
         for pr_numbers in pr_numbers_batched:
             reviewer_data = get_reviewers_with_comments_for_pull_requests(
@@ -88,7 +88,7 @@ def main() -> None:
                 if "login" not in user:
                     raise LoginNotFoundError
 
-                login = user["login"]
+                login: str = user["login"]
                 comment_count = review["comment_count"]
 
                 if login not in reviewer_stats:
@@ -112,7 +112,7 @@ def main() -> None:
     ]
     # convert the dictionary to a list of lists and
     #   sort by the number of PRs reviewed
-    table = sorted(table, key=lambda x: x[1], reverse=True)
+    table = sorted(table, key=lambda x: (x[1],x[2]), reverse=True)
     print(tabulate(table, ["User", "Reviews", "Comments"]))  # noqa: T201
 
 
