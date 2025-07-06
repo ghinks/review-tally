@@ -37,12 +37,6 @@ async def fetch_batch(urls: list[str]) -> tuple[Any]:
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
 
-# async def fetch_review_comments_batch(urls: list[str]) -> tuple[Any]:
-#     timeout = ClientTimeout(total=REVIEWERS_TIMEOUT)
-#     async with aiohttp.ClientSession(timeout=timeout) as session:
-#         tasks = [fetch(session, url) for url in urls]
-#         return await asyncio.gather(*tasks)  # type: ignore[return-value]
-
 
 def get_reviewers_for_pull_requests(
     owner: str, repo: str, pull_numbers: list[int],
