@@ -1,11 +1,23 @@
 import asyncio
 import os
+import random
 from typing import Any
 
 import aiohttp
-from aiohttp import ClientTimeout
 
-from reviewtally.queries import REVIEWERS_TIMEOUT
+from reviewtally.queries import (
+    AIOHTTP_TIMEOUT,
+    BACKOFF_MULTIPLIER,
+    CONNECTION_ENABLE_CLEANUP,
+    CONNECTION_KEEP_ALIVE,
+    CONNECTION_POOL_SIZE,
+    CONNECTION_POOL_SIZE_PER_HOST,
+    INITIAL_BACKOFF,
+    MAX_BACKOFF,
+    MAX_RETRIES,
+    RETRYABLE_STATUS_CODES,
+    SSL_CONTEXT,
+)
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 # get proxy settings from environment variables
@@ -15,24 +27,74 @@ if not HTTPS_PROXY:
     HTTPS_PROXY = os.getenv("https_proxy")
 
 
-async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, str]:
+async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-    if HTTPS_PROXY:
-        async with client.get(url,
-                              headers=headers,
-                              proxy=HTTPS_PROXY) as response:
-            return await response.json()
-    else:
-        async with client.get(url, headers=headers) as response:
-            return await response.json()
+
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            if HTTPS_PROXY:
+                async with client.get(url,
+                                      headers=headers,
+                                      proxy=HTTPS_PROXY) as response:
+                    if response.status in RETRYABLE_STATUS_CODES:
+                        if attempt < MAX_RETRIES:
+                            await _backoff_delay(attempt)
+                            continue
+                        # Final attempt failed
+                        response.raise_for_status()
+                    response.raise_for_status()  # Raise for other HTTP errors
+                    return await response.json()
+            else:
+                async with client.get(url, headers=headers) as response:
+                    if response.status in RETRYABLE_STATUS_CODES:
+                        if attempt < MAX_RETRIES:
+                            await _backoff_delay(attempt)
+                            continue
+                        # Final attempt failed
+                        response.raise_for_status()
+                    response.raise_for_status()  # Raise for other HTTP errors
+                    return await response.json()
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            if attempt < MAX_RETRIES:
+                await _backoff_delay(attempt)
+                continue
+            # Final attempt failed, re-raise the exception
+            raise
+
+    # This should never be reached due to the loop structure
+    msg = (
+        f"Unexpected error: Failed to fetch {url} "
+        f"after {MAX_RETRIES} retries"
+    )
+    raise RuntimeError(msg)
+
+
+async def _backoff_delay(attempt: int) -> None:
+    """Calculate exponential backoff delay with jitter."""
+    delay = min(
+        INITIAL_BACKOFF * (BACKOFF_MULTIPLIER ** attempt),
+        MAX_BACKOFF,
+    )
+    # Add jitter to prevent thundering herd
+    jitter = random.uniform(0.1, 0.5) * delay  # noqa: S311
+    await asyncio.sleep(delay + jitter)
 
 
 async def fetch_batch(urls: list[str]) -> tuple[Any]:
-    timeout = ClientTimeout(total=REVIEWERS_TIMEOUT)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
+    connector = aiohttp.TCPConnector(
+        ssl=SSL_CONTEXT,
+        limit=CONNECTION_POOL_SIZE,
+        limit_per_host=CONNECTION_POOL_SIZE_PER_HOST,
+        keepalive_timeout=CONNECTION_KEEP_ALIVE,
+        enable_cleanup_closed=CONNECTION_ENABLE_CLEANUP,
+    )
+    async with aiohttp.ClientSession(
+        timeout=AIOHTTP_TIMEOUT,
+        connector=connector,
+    ) as session:
         tasks = [fetch(session, url) for url in urls]
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
