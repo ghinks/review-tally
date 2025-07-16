@@ -15,6 +15,9 @@ poetry install
 
 # Activate virtual environment
 poetry shell
+
+# Install pre-commit hooks (one-time setup)
+pre-commit install
 ```
 
 ### Code Quality and Testing
@@ -39,6 +42,9 @@ mypy reviewtally/
 
 # Sort imports with isort
 isort .
+
+# Run pre-commit hooks manually on all files
+pre-commit run --all-files
 ```
 
 ### Running the Application
