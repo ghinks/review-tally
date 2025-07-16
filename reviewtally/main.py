@@ -107,13 +107,19 @@ def main() -> None:
     timestamped_print(
         f"Printing results {time.time() - start_time:.2f} seconds")
     table = [
-        [login, stats["reviews"], stats["comments"]]
+        [
+            login,
+            stats["reviews"],
+            stats["comments"],
+            f"{stats['comments'] / stats['reviews']:.1f}"
+                if stats["reviews"] > 0 else "0.0",
+        ]
         for login, stats in reviewer_stats.items()
     ]
     # convert the dictionary to a list of lists and
     #   sort by the number of PRs reviewed
     table = sorted(table, key=lambda x: (x[1],x[2]), reverse=True)
-    print(tabulate(table, ["User", "Reviews", "Comments"]))  # noqa: T201
+    print(tabulate(table, ["User", "Reviews", "Comments", "Avg Comments"]))  # noqa: T201
 
 
 if __name__ == "__main__":
