@@ -108,10 +108,11 @@ def main() -> None:
         f"Printing results {time.time() - start_time:.2f} seconds")
     table = [
         [
-            login, 
-            stats["reviews"], 
+            login,
+            stats["reviews"],
             stats["comments"],
-            f"{stats['comments'] / stats['reviews']:.1f}" if stats["reviews"] > 0 else "0.0"
+            f"{stats['comments'] / stats['reviews']:.1f}"
+                if stats["reviews"] > 0 else "0.0",
         ]
         for login, stats in reviewer_stats.items()
     ]
