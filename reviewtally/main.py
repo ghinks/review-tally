@@ -1,4 +1,5 @@
 import time
+from typing import Any, cast
 
 from tabulate import tabulate
 from tqdm import tqdm
@@ -28,13 +29,19 @@ def timestamped_print(message: str) -> None:
 
 BATCH_SIZE = 5
 
+# Constants for engagement level thresholds
+HIGH_ENGAGEMENT_THRESHOLD = 2.0
+MEDIUM_ENGAGEMENT_THRESHOLD = 0.5
+THOROUGHNESS_MULTIPLIER = 25
+MAX_THOROUGHNESS_SCORE = 100
+
 
 def main() -> None:
     # map containing the reviewer name and the number of pull requests reviewed
     start_time = time.time()
     timestamped_print("Starting process")
-    reviewer_stats: dict[str, dict[str, int]] = {}
-    org_name, start_date, end_date, languages = parse_cmd_line()
+    reviewer_stats: dict[str, dict[str, Any]] = {}
+    org_name, start_date, end_date, languages, metrics = parse_cmd_line()
     try:
         timestamped_print(
             f"Calling get_repos_by_language {time.time() - start_time:.2f} "
@@ -95,6 +102,8 @@ def main() -> None:
                     reviewer_stats[login] = {
                         "reviews": 0,
                         "comments": 0,
+                        "engagement_level": "Low",
+                        "thoroughness_score": 0,
                     }
 
                 reviewer_stats[login]["reviews"] += 1
@@ -103,23 +112,91 @@ def main() -> None:
             "Finished processing "
             f"{repo} {time.time() - start_time:.2f} seconds",
         )
+
+    # Calculate Phase 1 metrics
+    for stats in reviewer_stats.values():
+        avg_comments = (
+            stats["comments"] / stats["reviews"]
+            if stats["reviews"] > 0
+            else 0
+        )
+
+        # Review engagement level
+        if avg_comments >= HIGH_ENGAGEMENT_THRESHOLD:
+            stats["engagement_level"] = "High"
+        elif avg_comments >= MEDIUM_ENGAGEMENT_THRESHOLD:
+            stats["engagement_level"] = "Medium"
+        else:
+            stats["engagement_level"] = "Low"
+
+        # Thoroughness score (0-100 scale)
+        stats["thoroughness_score"] = min(
+            int(avg_comments * THOROUGHNESS_MULTIPLIER),
+            MAX_THOROUGHNESS_SCORE,
+        )
+
     # convert the dictionary to a list of lists and print out with tabulate
     timestamped_print(
         f"Printing results {time.time() - start_time:.2f} seconds")
-    table = [
-        [
-            login,
-            stats["reviews"],
-            stats["comments"],
+
+    # Define available metrics and their display info
+    def get_avg_comments(stats: dict[str, Any]) -> str:
+        return (
             f"{stats['comments'] / stats['reviews']:.1f}"
-                if stats["reviews"] > 0 else "0.0",
-        ]
-        for login, stats in reviewer_stats.items()
-    ]
+            if stats["reviews"] > 0
+            else "0.0"
+        )
+
+    metric_info = {
+        "reviews": {
+            "header": "Reviews",
+            "getter": lambda stats: stats["reviews"],
+        },
+        "comments": {
+            "header": "Comments",
+            "getter": lambda stats: stats["comments"],
+        },
+        "avg-comments": {
+            "header": "Avg Comments",
+            "getter": get_avg_comments,
+        },
+        "engagement": {
+            "header": "Engagement",
+            "getter": lambda stats: stats["engagement_level"],
+        },
+        "thoroughness": {
+            "header": "Thoroughness",
+            "getter": lambda stats: f"{stats['thoroughness_score']}%",
+        },
+    }
+
+    # Build headers and table data based on selected metrics
+    headers = ["User"]
+    headers.extend([
+        str(metric_info[metric]["header"])
+        for metric in metrics
+        if metric in metric_info
+    ])
+
+    table = []
+    for login, stats in reviewer_stats.items():
+        row = [login]
+        row.extend([
+            str(cast(Any, metric_info[metric]["getter"])(stats))
+            for metric in metrics
+            if metric in metric_info
+        ])
+        table.append(row)
+
     # convert the dictionary to a list of lists and
     #   sort by the number of PRs reviewed
-    table = sorted(table, key=lambda x: (x[1],x[2]), reverse=True)
-    print(tabulate(table, ["User", "Reviews", "Comments", "Avg Comments"]))  # noqa: T201
+    def sort_key(x: list) -> tuple[int, int]:
+        reviews = x[1] if len(x) > 1 else 0
+        comments = x[2] if len(x) > 2 else 0  # noqa: PLR2004
+        return (reviews, comments)
+
+    table = sorted(table, key=sort_key, reverse=True)
+    print(tabulate(table, headers))  # noqa: T201
 
 
 if __name__ == "__main__":
