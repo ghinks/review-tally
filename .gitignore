@@ -162,3 +162,4 @@ cython_debug/
 .idea/
 /reviewtally/queries/graphql.config.yml
 TODOS.md
+/claude-local.md
