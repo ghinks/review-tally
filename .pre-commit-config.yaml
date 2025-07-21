@@ -3,5 +3,3 @@ repos:
     rev: v0.12.4
     hooks:
       - id: ruff-check
-        types_or: [ python, pyi ]
-        args: [--check]
