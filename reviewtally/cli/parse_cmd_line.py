@@ -13,7 +13,7 @@ def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
     print(f"Current version is {version}") # noqa: T201
 
-def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[valid-type]
+def parse_cmd_line() -> [str, datetime, datetime, list[str], list[str]]:  # type: ignore[valid-type]
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare
     a GTIHUB_TOKEN variable with a valid GitHub token.
@@ -46,6 +46,14 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[va
     # add the language selection argument
     parser.add_argument("-l", "--language", required=False,
                         help=language_selection)
+    # add the metrics selection argument
+    metrics_help = (
+        "Comma-separated list of metrics to display "
+        "(reviews,comments,avg-comments,engagement,thoroughness)"
+    )
+    parser.add_argument("-m", "--metrics", required=False,
+                        default="reviews,comments,avg-comments",
+                        help=metrics_help)
     version_help = """
     Print version and exit
     """
@@ -80,4 +88,11 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str]]:  # type: ignore[va
         languages = args.language.split(",")
     else:
         languages = [args.language]
-    return args.org, start_date, end_date, languages
+
+    # parse metrics argument
+    if args.metrics and "," in args.metrics:
+        metrics = args.metrics.split(",")
+    else:
+        metrics = [args.metrics]
+
+    return args.org, start_date, end_date, languages, metrics
