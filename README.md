@@ -45,11 +45,17 @@ Specifying the time frame:
 review-tally -o expressjs -l javascript -s 2021-01-01 -e 2021-01-31
 ```
 
+Customizing metrics displayed:
+```bash
+review-tally -o expressjs -l javascript -m reviews,engagement,thoroughness
+```
+
 ## Options 
 
 * -o, --organization The Github organization that you want to query
 * -l, --languages  A comma separated list of languages that you want to include
 * -s, --start-date The start date for the time frame that you want to query (optional)
 * -e, --end-date The end date for the time frame that you want to query (optional)
+* -m, --metrics Comma-separated list of metrics to display (reviews,comments,avg-comments,engagement,thoroughness). Default: reviews,comments,avg-comments
 * -h, --help Show this message and exit
 * -v, --version Show the version of the tool
