@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 import requests
@@ -63,3 +65,16 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
                 [language.lower() for language in languages]
             for node in repo["languages"]["nodes"])
     ]
+
+
+def get_repos(
+    org_name: str, languages: list[str],
+) -> list[str] | None:
+    try:
+        return list(get_repos_by_language(org_name, languages))
+    except GitHubTokenNotDefinedError as e:
+        print("Error:", e)  # noqa: T201
+        return None
+    except NoGitHubOrgError as e:
+        print("Error:", e)  # noqa: T201
+        return None
