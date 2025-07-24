@@ -10,14 +10,14 @@ from tabulate import tabulate
 from tqdm import tqdm
 
 from reviewtally.queries.local_exceptions import (
-    GitHubTokenNotDefinedError,
     LoginNotFoundError,
-    NoGitHubOrgError,
 )
 
 from .cli.parse_cmd_line import parse_cmd_line
 from .queries.get_prs import get_pull_requests_between_dates
-from .queries.get_repos_gql import get_repos_by_language
+from .queries.get_repos_gql import (
+    get_repositories_safely,
+)
 from .queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
 )
@@ -72,18 +72,6 @@ METRIC_INFO = {
     },
 }
 
-
-def get_repositories_safely(
-    org_name: str, languages: list[str],
-) -> list[str] | None:
-    try:
-        return list(get_repos_by_language(org_name, languages))
-    except GitHubTokenNotDefinedError as e:
-        print("Error:", e)  # noqa: T201
-        return None
-    except NoGitHubOrgError as e:
-        print("Error:", e)  # noqa: T201
-        return None
 
 
 def collect_review_data(
