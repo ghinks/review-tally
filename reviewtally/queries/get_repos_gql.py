@@ -67,7 +67,7 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     ]
 
 
-def get_repositories_safely(
+def get_repos(
     org_name: str, languages: list[str],
 ) -> list[str] | None:
     try:

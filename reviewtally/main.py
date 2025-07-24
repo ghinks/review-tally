@@ -16,7 +16,7 @@ from reviewtally.queries.local_exceptions import (
 from .cli.parse_cmd_line import parse_cmd_line
 from .queries.get_prs import get_pull_requests_between_dates
 from .queries.get_repos_gql import (
-    get_repositories_safely,
+    get_repos,
 )
 from .queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
@@ -205,7 +205,7 @@ def main() -> None:
         f"Calling get_repos_by_language {time.time() - start_time:.2f} "
         "seconds",
     )
-    repo_list = get_repositories_safely(org_name, languages)
+    repo_list = get_repos(org_name, languages)
     if repo_list is None:
         return
     repo_names = tqdm(repo_list)
