@@ -142,6 +142,7 @@ def get_reviewers_with_comments_for_pull_requests(
                 "user": user,
                 "review_id": review_id,
                 "pull_number": pull_number,
+                "submitted_at": review["submitted_at"],
             })
 
     # Fetch all comments in batches
@@ -161,6 +162,7 @@ def get_reviewers_with_comments_for_pull_requests(
                 "review_id": metadata["review_id"],
                 "pull_number": metadata["pull_number"],
                 "comment_count": comment_count,
+                "submitted_at": metadata["submitted_at"],
             })
 
         return reviewer_data
