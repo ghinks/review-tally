@@ -218,7 +218,8 @@ def calculate_time_metrics(
     ):
         if review_time >= created_time:
             response_times.append(
-                (review_time - created_time).total_seconds() / SECONDS_PER_HOUR,
+                (review_time - created_time).total_seconds()
+                / SECONDS_PER_HOUR,
             )
 
     avg_response_time = (
@@ -231,7 +232,8 @@ def calculate_time_metrics(
     if len(review_datetimes) > 1:
         sorted_reviews = sorted(review_datetimes)
         completion_time = (
-            (sorted_reviews[-1] - sorted_reviews[0]).total_seconds() / SECONDS_PER_HOUR
+            (sorted_reviews[-1] - sorted_reviews[0]).total_seconds()
+            / SECONDS_PER_HOUR
         )
     else:
         completion_time = 0.0
