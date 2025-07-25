@@ -41,6 +41,8 @@ MEDIUM_ENGAGEMENT_THRESHOLD = 0.5
 THOROUGHNESS_MULTIPLIER = 25
 MAX_THOROUGHNESS_SCORE = 100
 HOURS_PER_DAY = 24
+SECONDS_PER_HOUR = 3600
+MINUTES_PER_HOUR = 60
 
 
 def get_avg_comments(stats: dict[str, Any]) -> str:
@@ -56,7 +58,7 @@ def format_hours(hours: float) -> str:
     if hours == 0:
         return "0h"
     if hours < 1:
-        return f"{int(hours * 60)}m"
+        return f"{int(hours * MINUTES_PER_HOUR)}m"
     if hours < HOURS_PER_DAY:
         return f"{hours:.1f}h"
     days = hours / HOURS_PER_DAY
@@ -216,7 +218,7 @@ def calculate_time_metrics(
     ):
         if review_time >= created_time:
             response_times.append(
-                (review_time - created_time).total_seconds() / 3600,
+                (review_time - created_time).total_seconds() / SECONDS_PER_HOUR,
             )
 
     avg_response_time = (
@@ -229,7 +231,7 @@ def calculate_time_metrics(
     if len(review_datetimes) > 1:
         sorted_reviews = sorted(review_datetimes)
         completion_time = (
-            (sorted_reviews[-1] - sorted_reviews[0]).total_seconds() / 3600
+            (sorted_reviews[-1] - sorted_reviews[0]).total_seconds() / SECONDS_PER_HOUR
         )
     else:
         completion_time = 0.0
