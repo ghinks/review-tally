@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
-    import datetime
+    import datetime as dt
 
 from tabulate import tabulate
 from tqdm import tqdm
@@ -39,6 +40,7 @@ HIGH_ENGAGEMENT_THRESHOLD = 2.0
 MEDIUM_ENGAGEMENT_THRESHOLD = 0.5
 THOROUGHNESS_MULTIPLIER = 25
 MAX_THOROUGHNESS_SCORE = 100
+HOURS_PER_DAY = 24
 
 
 def get_avg_comments(stats: dict[str, Any]) -> str:
@@ -47,6 +49,18 @@ def get_avg_comments(stats: dict[str, Any]) -> str:
         if stats["reviews"] > 0
         else "0.0"
     )
+
+
+def format_hours(hours: float) -> str:
+    """Format hours into human-readable time."""
+    if hours == 0:
+        return "0h"
+    if hours < 1:
+        return f"{int(hours * 60)}m"
+    if hours < HOURS_PER_DAY:
+        return f"{hours:.1f}h"
+    days = hours / HOURS_PER_DAY
+    return f"{days:.1f}d"
 
 
 METRIC_INFO = {
@@ -70,6 +84,22 @@ METRIC_INFO = {
         "header": "Thoroughness",
         "getter": lambda stats: f"{stats['thoroughness_score']}%",
     },
+    "response-time": {
+        "header": "Avg Response",
+        "getter": lambda stats: format_hours(
+            stats.get("avg_response_time_hours", 0),
+        ),
+    },
+    "completion-time": {
+        "header": "Review Span",
+        "getter": lambda stats: format_hours(
+            stats.get("avg_completion_time_hours", 0),
+        ),
+    },
+    "active-days": {
+        "header": "Active Days",
+        "getter": lambda stats: stats.get("active_review_days", 0),
+    },
 }
 
 
@@ -80,6 +110,9 @@ def collect_review_data(
     pull_requests: list,
     reviewer_stats: dict[str, dict[str, Any]],
 ) -> None:
+    # Create PR lookup for temporal data
+    pr_lookup = {pr["number"]: pr for pr in pull_requests}
+
     pr_numbers = [pr["number"] for pr in pull_requests]
     pr_numbers_batched = [
         pr_numbers[i: i + BATCH_SIZE]
@@ -96,6 +129,8 @@ def collect_review_data(
 
             login: str = user["login"]
             comment_count = review["comment_count"]
+            pr_number = review["pull_number"]
+            review_submitted_at = review["submitted_at"]
 
             if login not in reviewer_stats:
                 reviewer_stats[login] = {
@@ -103,17 +138,25 @@ def collect_review_data(
                     "comments": 0,
                     "engagement_level": "Low",
                     "thoroughness_score": 0,
+                    "review_times": [],
+                    "pr_created_times": [],
                 }
 
             reviewer_stats[login]["reviews"] += 1
             reviewer_stats[login]["comments"] += comment_count
 
+            # Store temporal data for time-based metrics
+            reviewer_stats[login]["review_times"].append(review_submitted_at)
+            reviewer_stats[login]["pr_created_times"].append(
+                pr_lookup[pr_number]["created_at"],
+            )
+
 
 def process_repositories(
     org_name: str,
     repo_names: tqdm,
-    start_date: datetime.datetime,
-    end_date: datetime.datetime,
+    start_date: dt.datetime,
+    end_date: dt.datetime,
     start_time: float,
 ) -> dict[str, dict[str, Any]]:
     reviewer_stats: dict[str, dict[str, Any]] = {}
@@ -141,6 +184,67 @@ def process_repositories(
     return reviewer_stats
 
 
+def calculate_time_metrics(
+    review_times: list[str], pr_created_times: list[str],
+) -> dict[str, Any]:
+    """Calculate time-based metrics from review and PR creation timestamps."""
+    if not review_times or not pr_created_times:
+        return {
+            "avg_response_time_hours": 0.0,
+            "avg_completion_time_hours": 0.0,
+            "active_review_days": 0,
+        }
+
+    # Parse timestamps
+    review_datetimes = [
+        datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc,
+        )
+        for ts in review_times
+    ]
+    pr_created_datetimes = [
+        datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc,
+        )
+        for ts in pr_created_times
+    ]
+
+    # Calculate response times (PR creation to review)
+    response_times = []
+    for created_time, review_time in zip(
+        pr_created_datetimes, review_datetimes,
+    ):
+        if review_time >= created_time:
+            response_times.append(
+                (review_time - created_time).total_seconds() / 3600,
+            )
+
+    avg_response_time = (
+        sum(response_times) / len(response_times)
+        if response_times
+        else 0.0
+    )
+
+    # Calculate completion time (first to last review)
+    if len(review_datetimes) > 1:
+        sorted_reviews = sorted(review_datetimes)
+        completion_time = (
+            (sorted_reviews[-1] - sorted_reviews[0]).total_seconds() / 3600
+        )
+    else:
+        completion_time = 0.0
+
+    # Calculate active review days
+    review_dates = {dt.date() for dt in review_datetimes}
+    active_days = len(review_dates)
+
+    return {
+        "avg_response_time_hours": avg_response_time,
+        "avg_completion_time_hours": completion_time,
+        "active_review_days": active_days,
+    }
+
+
 def calculate_reviewer_metrics(
     reviewer_stats: dict[str, dict[str, Any]],
 ) -> None:
@@ -164,6 +268,13 @@ def calculate_reviewer_metrics(
             int(avg_comments * THOROUGHNESS_MULTIPLIER),
             MAX_THOROUGHNESS_SCORE,
         )
+
+        # Time-based metrics
+        time_metrics = calculate_time_metrics(
+            stats.get("review_times", []),
+            stats.get("pr_created_times", []),
+        )
+        stats.update(time_metrics)
 
 
 def generate_results_table(

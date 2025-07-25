@@ -49,7 +49,7 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str], list[str]]:  # type
     # add the metrics selection argument
     metrics_help = (
         "Comma-separated list of metrics to display "
-        "(reviews,comments,avg-comments,engagement,thoroughness)"
+        "(reviews,comments,avg-comments,engagement,thoroughness,response-time,completion-time,active-days)"
     )
     parser.add_argument("-m", "--metrics", required=False,
                         default="reviews,comments,avg-comments",
