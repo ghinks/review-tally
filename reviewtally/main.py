@@ -304,8 +304,8 @@ def generate_results_table(
 
     # Sort by the number of PRs reviewed and comments
     def sort_key(x: list) -> tuple[int, int]:
-        reviews = x[1] if len(x) > 1 else 0
-        comments = x[2] if len(x) > 2 else 0  # noqa: PLR2004
+        reviews = int(x[1]) if len(x) > 1 else 0
+        comments = int(x[2]) if len(x) > 2 else 0  # noqa: PLR2004
         return (reviews, comments)
 
     table = sorted(table, key=sort_key, reverse=True)
