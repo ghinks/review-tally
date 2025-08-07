@@ -22,7 +22,7 @@ from reviewtally.queries.get_reviewers_rest import (
 from reviewtally.queries.local_exceptions import (
     LoginNotFoundError,
 )
-from reviewtally.utils.sprint_periods import (
+from reviewtally.analysis.sprint_periods import (
     calculate_sprint_periods,
     get_sprint_for_date,
 )
