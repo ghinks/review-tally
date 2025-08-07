@@ -11,7 +11,7 @@ def export_sprint_csv(
         return
 
     fieldnames = list(next(iter(team_metrics.values())).keys())
-    with Path.open(output_path, "w", newline="") as f:
+    with Path(output_path).open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for sprint_data in team_metrics.values():
