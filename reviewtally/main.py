@@ -9,6 +9,10 @@ from typing import Any, cast
 from tabulate import tabulate
 from tqdm import tqdm
 
+from reviewtally.analysis.sprint_periods import (
+    calculate_sprint_periods,
+    get_sprint_for_date,
+)
 from reviewtally.analysis.team_metrics import calculate_sprint_team_metrics
 from reviewtally.cli.parse_cmd_line import parse_cmd_line
 from reviewtally.exporters.sprint_export import export_sprint_csv
@@ -21,10 +25,6 @@ from reviewtally.queries.get_reviewers_rest import (
 )
 from reviewtally.queries.local_exceptions import (
     LoginNotFoundError,
-)
-from reviewtally.analysis.sprint_periods import (
-    calculate_sprint_periods,
-    get_sprint_for_date,
 )
 
 DEBUG_FLAG = False
