@@ -2,6 +2,7 @@
 # and return the parsed arguments, which will be used by the main function
 # to get the start and end dates for the pull requests and the organization
 # name
+from __future__ import annotations
 
 import argparse
 import importlib.metadata
@@ -13,7 +14,9 @@ def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
     print(f"Current version is {version}") # noqa: T201
 
-def parse_cmd_line() -> [str, datetime, datetime, list[str], list[str]]:  # type: ignore[valid-type]
+def parse_cmd_line() -> tuple[
+    str, datetime, datetime, list[str], list[str], bool, str | None,
+]:  # type: ignore[return-value]
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare
     a GTIHUB_TOKEN variable with a valid GitHub token.
@@ -59,6 +62,11 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str], list[str]]:  # type
     """
     parser.add_argument("-v", "--version", action="store_true",
                         help=version_help)
+    # add sprint analysis arguments
+    parser.add_argument("--sprint-analysis", action="store_true",
+                        help="Generate sprint-based team aggregation as CSV")
+    parser.add_argument("--output-path",
+                        help="Output CSV file path for sprint data")
     args = parser.parse_args()
     # catch ValueError if the date format is not correct
     try:
@@ -95,4 +103,12 @@ def parse_cmd_line() -> [str, datetime, datetime, list[str], list[str]]:  # type
     else:
         metrics = [args.metrics]
 
-    return args.org, start_date, end_date, languages, metrics
+    return (
+        args.org,
+        start_date,
+        end_date,
+        languages,
+        metrics,
+        args.sprint_analysis,
+        args.output_path,
+    )
