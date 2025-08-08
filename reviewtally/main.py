@@ -178,7 +178,7 @@ def collect_review_data(context: ReviewDataContext) -> None:
             # Sprint-based aggregation (if enabled)
             if (context.sprint_stats
                     is not None
-                    and context.sprint_periods is not None):
+                and context.sprint_periods is not None):
                 review_date = datetime.strptime(
                     review_submitted_at, "%Y-%m-%dT%H:%M:%SZ",
                 ).replace(tzinfo=timezone.utc)
