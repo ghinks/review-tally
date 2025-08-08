@@ -50,6 +50,15 @@ Customizing metrics displayed:
 review-tally -o expressjs -l javascript -m reviews,engagement,thoroughness
 ```
 
+## Sprint Analysis
+If aggregate data is required sprint over sprint then the `--sprint-analysis` 
+option can be used. This will produce a CSV file with the data for each sprint.
+
+```shell
+review-tally -o expressjs -l javascript --sprint-analysis --output-path sprint_analysis.csv
+```
+
+
 ## Options 
 
 * -o, --organization The Github organization that you want to query
@@ -59,3 +68,5 @@ review-tally -o expressjs -l javascript -m reviews,engagement,thoroughness
 * -m, --metrics Comma-separated list of metrics to display (reviews,comments,avg-comments,engagement,thoroughness). Default: reviews,comments,avg-comments
 * -h, --help Show this message and exit
 * -v, --version Show the version of the tool
+* --sprint-analysis selects the sprint analysis option
+* --output-path specifices the output file for sprint analysis
