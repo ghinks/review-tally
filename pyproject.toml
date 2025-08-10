@@ -7,7 +7,7 @@ license = "Apache"
 repository = "https://github.com/ghinks/review-tally"
 readme = "README.md"
 packages = [
-    { include = "reviewtally/**/*" }
+    { include = "reviewtally" }
 ]
 
 [tool.poetry.dependencies]
@@ -51,7 +51,10 @@ exclude = [
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = ["D100", "D101", "D102", "D103", "D203", "D212", ]
-per-file-ignores = { "tests/**/test*.py" = ["S101", "PT009"] }
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/test*.py" = ["S101", "PT009", "PT027", "ANN401"]
+"tests/**/__init__.py" = ["D104"]
 #E: Errors
 #W: Warnings
 #F: Pyflakes (logical errors)

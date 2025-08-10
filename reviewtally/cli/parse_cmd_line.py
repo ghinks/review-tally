@@ -9,6 +9,8 @@ import importlib.metadata
 import sys
 from datetime import datetime, timedelta, timezone
 
+from reviewtally.exceptions.local_exceptions import MalformedDateError
+
 
 def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
@@ -75,13 +77,17 @@ def parse_cmd_line() -> tuple[
                 datetime.
                     strptime(args.start_date, "%Y-%m-%d")).
                           replace(tzinfo=timezone.utc))
+    except ValueError:
+        print(MalformedDateError(args.start_date)) # noqa: T201
+        sys.exit(1)
+    try:
         if args.end_date:
             end_date = ((
                     datetime.
                         strptime(args.end_date, "%Y-%m-%d")).
                            replace(tzinfo=timezone.utc))
-    except ValueError as e:
-        print("Error:", e) # noqa: T201
+    except ValueError:
+        print(MalformedDateError(args.end_date)) # noqa: T201
         sys.exit(1)
     if args.version:
         print_toml_version()

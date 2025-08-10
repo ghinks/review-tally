@@ -18,3 +18,11 @@ class NoGitHubOrgError(ValueError):
     def __init__(self, reponame: str) -> None:
         """Initialize the exception string."""
         super().__init__(f"GitHub {reponame} organization not found")
+
+class MalformedDateError(ValueError):
+    """Exception raised when the date is malformed."""
+
+    def __init__(self, date: str) -> None:
+        """Initialize the exception string."""
+        super().__init__(f"Malformed date: {date}. "
+                         "Please use the format YYYY-MM-DD")
