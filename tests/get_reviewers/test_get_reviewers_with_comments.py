@@ -241,6 +241,83 @@ class TestGetReviewersWithComments(unittest.TestCase):
         assert results[0]["pull_number"] == self.PULL_REQUEST_1
         assert results[0]["comment_count"] == self.EXPECTED_COMMENT_COUNT
 
+    @aioresponses()
+    def test_get_reviewers_with_comments_missing_submitted_at_uses_comment_timestamp(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Review missing submitted_at should fall back to latest comment timestamp."""
+        pull_numbers = [self.PULL_REQUEST_1]
+
+        # Mock the reviews API call with missing submitted_at
+        reviews_url = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
+        reviews_data = [
+            {
+                "id": self.REVIEW_ID_80,
+                "user": {"login": "octocat"},
+                "state": "APPROVED",
+                # intentionally no submitted_at
+            },
+        ]
+        mocked.get(reviews_url, status=200, payload=reviews_data)
+
+        # Mock the comments API call
+        comments_url = get_review_comments_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1, self.REVIEW_ID_80,
+        )
+        comments_data = read_review_comments_file()
+        mocked.get(comments_url, status=200, payload=comments_data)
+
+        results = get_reviewers_with_comments_for_pull_requests(
+            self.OWNER, self.REPO, pull_numbers,
+        )
+
+        assert len(results) == self.EXPECTED_SINGLE_RESULT
+        assert results[0]["user"]["login"] == "octocat"
+        assert results[0]["review_id"] == self.REVIEW_ID_80
+        assert results[0]["pull_number"] == self.PULL_REQUEST_1
+        assert results[0]["comment_count"] == self.EXPECTED_COMMENT_COUNT
+        # From fixture, both comments have the same created_at
+        assert results[0]["submitted_at"] == "2011-04-14T16:00:49Z"
+
+    @aioresponses()
+    def test_get_reviewers_with_comments_missing_submitted_at_and_no_comments(
+        self, mocked: aioresponses,
+    ) -> None:
+        """Review missing submitted_at and with no comments should not crash and have submitted_at None."""
+        pull_numbers = [self.PULL_REQUEST_1]
+
+        # Mock the reviews API call with missing submitted_at
+        reviews_url = get_reviews_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1,
+        )
+        reviews_data = [
+            {
+                "id": self.REVIEW_ID_80,
+                "user": {"login": "octocat"},
+                "state": "PENDING",
+                # intentionally no submitted_at
+            },
+        ]
+        mocked.get(reviews_url, status=200, payload=reviews_data)
+
+        # Mock empty comments response
+        comments_url = get_review_comments_url(
+            self.OWNER, self.REPO, self.PULL_REQUEST_1, self.REVIEW_ID_80,
+        )
+        empty_comments = read_empty_comments_file()
+        mocked.get(comments_url, status=200, payload=empty_comments)
+
+        results = get_reviewers_with_comments_for_pull_requests(
+            self.OWNER, self.REPO, pull_numbers,
+        )
+
+        assert len(results) == self.EXPECTED_SINGLE_RESULT
+        assert results[0]["user"]["login"] == "octocat"
+        assert results[0]["comment_count"] == self.EXPECTED_NO_COMMENTS
+        assert results[0]["submitted_at"] is None
+
 
 if __name__ == "__main__":
     unittest.main()

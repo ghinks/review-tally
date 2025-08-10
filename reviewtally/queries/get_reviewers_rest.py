@@ -4,6 +4,9 @@ import random
 from typing import Any
 
 import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
 
 from reviewtally.queries import (
     AIOHTTP_TIMEOUT,
@@ -132,6 +135,9 @@ def get_reviewers_with_comments_for_pull_requests(
         for review in sublist:
             user = review["user"]
             review_id = review["id"]
+            # submitted_at can be missing for some review states (e.g., PENDING)
+            submitted_at = review.get("submitted_at") or review.get("submittedAt")
+            state = review.get("state")
 
             comment_url = (
                 f"https://api.github.com/repos/{owner}/{repo}"
@@ -142,7 +148,8 @@ def get_reviewers_with_comments_for_pull_requests(
                 "user": user,
                 "review_id": review_id,
                 "pull_number": pull_number,
-                "submitted_at": review["submitted_at"],
+                "submitted_at": submitted_at,
+                "state": state,
             })
 
     # Fetch all comments in batches
@@ -157,12 +164,32 @@ def get_reviewers_with_comments_for_pull_requests(
             metadata = review_metadata[i]
             comment_count = len(comments) if comments else 0
 
+            # Fallback: if submitted_at is missing, derive from comments timestamps
+            submitted_at = metadata.get("submitted_at")
+            if not submitted_at:
+                if comments:
+                    # Use the latest available timestamp from comments
+                    timestamps: list[str] = []
+                    for c in comments:
+                        ts = c.get("created_at") or c.get("updated_at")
+                        if ts:
+                            timestamps.append(ts)
+                    if timestamps:
+                        submitted_at = max(timestamps)
+                if not submitted_at:
+                    logger.warning(
+                        "Missing submitted_at for review_id=%s state=%s PR#%s",
+                        metadata.get("review_id"),
+                        metadata.get("state"),
+                        metadata.get("pull_number"),
+                    )
+
             reviewer_data.append({
                 "user": metadata["user"],
                 "review_id": metadata["review_id"],
                 "pull_number": metadata["pull_number"],
                 "comment_count": comment_count,
-                "submitted_at": metadata["submitted_at"],
+                "submitted_at": submitted_at,
             })
 
         return reviewer_data

@@ -154,7 +154,7 @@ def collect_review_data(context: ReviewDataContext) -> None:
             login: str = user["login"]
             comment_count = review["comment_count"]
             pr_number = review["pull_number"]
-            review_submitted_at = review["submitted_at"]
+            review_submitted_at = review.get("submitted_at")
 
             if login not in context.reviewer_stats:
                 context.reviewer_stats[login] = {
@@ -170,7 +170,8 @@ def collect_review_data(context: ReviewDataContext) -> None:
             context.reviewer_stats[login]["comments"] += comment_count
 
             # Store temporal data for time-based metrics
-            context.reviewer_stats[login]["review_times"].append(review_submitted_at)
+            if review_submitted_at:
+                context.reviewer_stats[login]["review_times"].append(review_submitted_at)
             context.reviewer_stats[login]["pr_created_times"].append(
                 pr_lookup[pr_number]["created_at"],
             )
@@ -179,13 +180,16 @@ def collect_review_data(context: ReviewDataContext) -> None:
             if (context.sprint_stats
                     is not None
                 and context.sprint_periods is not None):
-                review_date = datetime.strptime(
-                    review_submitted_at, "%Y-%m-%dT%H:%M:%SZ",
-                ).replace(tzinfo=timezone.utc)
-                sprint_label = get_sprint_for_date(review_date,
-                                                   context.sprint_periods)
+                if review_submitted_at:
+                    review_date = datetime.strptime(
+                        review_submitted_at, "%Y-%m-%dT%H:%M:%SZ",
+                    ).replace(tzinfo=timezone.utc)
+                    sprint_label = get_sprint_for_date(review_date,
+                                                       context.sprint_periods)
+                else:
+                    sprint_label = None
 
-                if sprint_label not in context.sprint_stats:
+                if sprint_label and sprint_label not in context.sprint_stats:
                     context.sprint_stats[sprint_label] = {
                         "total_reviews": 0,
                         "total_comments": 0,
@@ -194,17 +198,19 @@ def collect_review_data(context: ReviewDataContext) -> None:
                         "pr_created_times": [],
                     }
 
-                context.sprint_stats[sprint_label]["total_reviews"] += 1
-                context.sprint_stats[sprint_label]["total_comments"] \
-                    += comment_count
-                context.sprint_stats[sprint_label]["unique_reviewers"]\
-                    .add(login)
-                context.sprint_stats[sprint_label]["review_times"].append(
-                    review_submitted_at,
-                )
-                context.sprint_stats[sprint_label]["pr_created_times"].append(
-                    pr_lookup[pr_number]["created_at"],
-                )
+                if sprint_label:
+                    context.sprint_stats[sprint_label]["total_reviews"] += 1
+                    context.sprint_stats[sprint_label]["total_comments"] \
+                        += comment_count
+                    context.sprint_stats[sprint_label]["unique_reviewers"]\
+                        .add(login)
+                    if review_submitted_at:
+                        context.sprint_stats[sprint_label]["review_times"].append(
+                            review_submitted_at,
+                        )
+                    context.sprint_stats[sprint_label]["pr_created_times"].append(
+                        pr_lookup[pr_number]["created_at"],
+                    )
 
 
 def process_repositories(context: ProcessRepositoriesContext) \
