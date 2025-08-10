@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
+import sys
 
 import requests
 
 from reviewtally.exceptions.local_exceptions import (
     GitHubTokenNotDefinedError,
+    HTTPErrorBadTokenError,
     NoGitHubOrgError,
 )
 from reviewtally.queries import GRAPHQL_TIMEOUT
@@ -72,6 +74,9 @@ def get_repos(
 ) -> list[str] | None:
     try:
         return list(get_repos_by_language(org_name, languages))
+    except requests.exceptions.HTTPError as e:
+        print(HTTPErrorBadTokenError(f"{e}")) #noqa: T201
+        sys.exit(1)
     except GitHubTokenNotDefinedError as e:
         print("Error:", e)  # noqa: T201
         return None

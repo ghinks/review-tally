@@ -5,6 +5,13 @@ class GitHubTokenNotDefinedError(Exception):
         """Initialize the exception string."""
         super().__init__("Missing GitHub token, please set the "
                          "GITHUB_TOKEN environment variable")
+class HTTPErrorBadTokenError(Exception):
+    """Exception raised when the GitHub token is invalid."""
+
+    def __init__(self, req_err: str) -> None:
+        """Initialize the exception string."""
+        super().__init__("Invalid GitHub token, please check your "
+                         f"GITHUB_TOKEN environment variable {req_err}")
 class LoginNotFoundError(ValueError):
     """Exception raised when the login is not found in the reviewer."""
 
