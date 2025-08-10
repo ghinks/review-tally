@@ -15,6 +15,9 @@ from reviewtally.analysis.sprint_periods import (
 )
 from reviewtally.analysis.team_metrics import calculate_sprint_team_metrics
 from reviewtally.cli.parse_cmd_line import parse_cmd_line
+from reviewtally.exceptions.local_exceptions import (
+    LoginNotFoundError,
+)
 from reviewtally.exporters.sprint_export import export_sprint_csv
 from reviewtally.queries.get_prs import get_pull_requests_between_dates
 from reviewtally.queries.get_repos_gql import (
@@ -22,9 +25,6 @@ from reviewtally.queries.get_repos_gql import (
 )
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
-)
-from reviewtally.queries.local_exceptions import (
-    LoginNotFoundError,
 )
 
 DEBUG_FLAG = False

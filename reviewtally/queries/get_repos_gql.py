@@ -4,11 +4,11 @@ import os
 
 import requests
 
-from reviewtally.queries import GRAPHQL_TIMEOUT
-from reviewtally.queries.local_exceptions import (
+from reviewtally.exceptions.local_exceptions import (
     GitHubTokenNotDefinedError,
     NoGitHubOrgError,
 )
+from reviewtally.queries import GRAPHQL_TIMEOUT
 
 # exceptions.py
 

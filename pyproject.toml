@@ -51,7 +51,7 @@ exclude = [
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = ["D100", "D101", "D102", "D103", "D203", "D212", ]
-per-file-ignores = { "tests/**/test*.py" = ["S101", "PT009"] }
+per-file-ignores = { "tests/**/test*.py" = ["S101", "PT009", "PT027", "ANN401"] }
 #E: Errors
 #W: Warnings
 #F: Pyflakes (logical errors)
