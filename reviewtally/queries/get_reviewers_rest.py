@@ -37,7 +37,9 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
         try:
             if HTTPS_PROXY:
                 async with client.get(
-                    url, headers=headers, proxy=HTTPS_PROXY,
+                    url,
+                    headers=headers,
+                    proxy=HTTPS_PROXY,
                 ) as response:
                     if response.status in RETRYABLE_STATUS_CODES:
                         if attempt < MAX_RETRIES:

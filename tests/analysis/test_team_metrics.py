@@ -224,7 +224,8 @@ class TestCalculateSprintTeamMetrics(unittest.TestCase):
         self.assertEqual(sprint1["unique_reviewers"], 3)  # Converted from set
         self.assertEqual(sprint1["avg_comments_per_review"], 2.5)  # 25/10
         self.assertEqual(
-            sprint1["reviews_per_reviewer"], 10 / 3,
+            sprint1["reviews_per_reviewer"],
+            10 / 3,
         )  # 10/3 ≈ 3.33
         self.assertEqual(sprint1["team_engagement"], "High")  # 2.5 >= 2.0
 

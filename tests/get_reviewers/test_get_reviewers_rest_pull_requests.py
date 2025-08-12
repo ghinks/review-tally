@@ -23,6 +23,8 @@ class TestGetReviewers(unittest.TestCase):
             mocked.get(url, status=200, payload=payload)
 
         results = get_reviewers_for_pull_requests(
-            self.OWNER, self.REPO, self.PULL_REQUESTS,
+            self.OWNER,
+            self.REPO,
+            self.PULL_REQUESTS,
         )
         assert results[0]["id"] == 1

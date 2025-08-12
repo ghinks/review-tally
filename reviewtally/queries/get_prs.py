@@ -32,7 +32,10 @@ def get_pull_requests_between_dates(
     while True:
         params = {**params, "page": page}
         response = requests.get(
-            url, headers=headers, params=params, timeout=GENERAL_TIMEOUT,
+            url,
+            headers=headers,
+            params=params,
+            timeout=GENERAL_TIMEOUT,
         )
         response.raise_for_status()
         prs = response.json()

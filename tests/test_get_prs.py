@@ -44,7 +44,10 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
 
         # Call the function to test
         pull_requests = get_pull_requests_between_dates(
-            owner, repo, start_date, end_date,
+            owner,
+            repo,
+            start_date,
+            end_date,
         )
 
         # Assert the result

@@ -199,7 +199,8 @@ def collect_review_data(context: ReviewDataContext) -> None:
                     "%Y-%m-%dT%H:%M:%SZ",
                 ).replace(tzinfo=timezone.utc)
                 sprint_label = get_sprint_for_date(
-                    review_date, context.sprint_periods,
+                    review_date,
+                    context.sprint_periods,
                 )
 
                 if sprint_label not in context.sprint_stats:
@@ -230,7 +231,8 @@ def collect_review_data(context: ReviewDataContext) -> None:
             ):
                 # Log when we skip sprint aggregation due to missing timestamp
                 print(  # noqa: T201
-                    f"Warning: Skipping sprint aggregation for review by {login} "
+                    f"Warning: Skipping sprint "
+                    f"aggregation for review by {login} "
                     f"on PR {pr_number} (missing submitted_at)",
                 )
 

@@ -56,7 +56,10 @@ def parse_cmd_line() -> tuple[
     )
     # add the language selection argument
     parser.add_argument(
-        "-l", "--language", required=False, help=language_selection,
+        "-l",
+        "--language",
+        required=False,
+        help=language_selection,
     )
     # add the metrics selection argument
     metrics_help = (
@@ -74,7 +77,10 @@ def parse_cmd_line() -> tuple[
     Print version and exit
     """
     parser.add_argument(
-        "-v", "--version", action="store_true", help=version_help,
+        "-v",
+        "--version",
+        action="store_true",
+        help=version_help,
     )
     # add sprint analysis arguments
     parser.add_argument(
@@ -83,7 +89,8 @@ def parse_cmd_line() -> tuple[
         help="Generate sprint-based team aggregation as CSV",
     )
     parser.add_argument(
-        "--output-path", help="Output CSV file path for sprint data",
+        "--output-path",
+        help="Output CSV file path for sprint data",
     )
     args = parser.parse_args()
     # catch ValueError if the date format is not correct
