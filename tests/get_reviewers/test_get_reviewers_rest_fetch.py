@@ -17,7 +17,7 @@ class TestFetch(unittest.TestCase):
 
         async def run_test() -> None:
             async with aiohttp.ClientSession() as session:
-                    result = await fetch(session,url)
-                    assert result == payload
+                result = await fetch(session, url)
+                assert result == payload
 
         asyncio.run(run_test())

@@ -36,9 +36,9 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
     for attempt in range(MAX_RETRIES + 1):
         try:
             if HTTPS_PROXY:
-                async with client.get(url,
-                                      headers=headers,
-                                      proxy=HTTPS_PROXY) as response:
+                async with client.get(
+                    url, headers=headers, proxy=HTTPS_PROXY,
+                ) as response:
                     if response.status in RETRYABLE_STATUS_CODES:
                         if attempt < MAX_RETRIES:
                             await _backoff_delay(attempt)
@@ -66,8 +66,7 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
 
     # This should never be reached due to the loop structure
     msg = (
-        f"Unexpected error: Failed to fetch {url} "
-        f"after {MAX_RETRIES} retries"
+        f"Unexpected error: Failed to fetch {url} after {MAX_RETRIES} retries"
     )
     raise RuntimeError(msg)
 
@@ -75,7 +74,7 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
 async def _backoff_delay(attempt: int) -> None:
     """Calculate exponential backoff delay with jitter."""
     delay = min(
-        INITIAL_BACKOFF * (BACKOFF_MULTIPLIER ** attempt),
+        INITIAL_BACKOFF * (BACKOFF_MULTIPLIER**attempt),
         MAX_BACKOFF,
     )
     # Add jitter to prevent thundering herd
@@ -99,9 +98,10 @@ async def fetch_batch(urls: list[str]) -> tuple[Any]:
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
 
-
 def get_reviewers_for_pull_requests(
-    owner: str, repo: str, pull_numbers: list[int],
+    owner: str,
+    repo: str,
+    pull_numbers: list[int],
 ) -> list[dict]:
     urls = [
         f"https://api.github.com/repos/{owner}/{repo}"
@@ -113,7 +113,9 @@ def get_reviewers_for_pull_requests(
 
 
 def get_reviewers_with_comments_for_pull_requests(
-    owner: str, repo: str, pull_numbers: list[int],
+    owner: str,
+    repo: str,
+    pull_numbers: list[int],
 ) -> list[dict]:
     # First, get all reviews for the pull requests
     review_urls = [
@@ -138,12 +140,23 @@ def get_reviewers_with_comments_for_pull_requests(
                 f"/pulls/{pull_number}/reviews/{review_id}/comments"
             )
             comment_urls.append(comment_url)
-            review_metadata.append({
-                "user": user,
-                "review_id": review_id,
-                "pull_number": pull_number,
-                "submitted_at": review["submitted_at"],
-            })
+            # Handle missing submitted_at key gracefully
+            submitted_at = review.get("submitted_at")
+            if submitted_at is None:
+                # Log diagnostic information when submitted_at is missing
+                print(  # noqa: T201
+                    f"Warning: Review {review_id} for PR {pull_number} "
+                    f"missing submitted_at",
+                )
+
+            review_metadata.append(
+                {
+                    "user": user,
+                    "review_id": review_id,
+                    "pull_number": pull_number,
+                    "submitted_at": submitted_at,
+                },
+            )
 
     # Fetch all comments in batches
     if comment_urls:
@@ -157,13 +170,15 @@ def get_reviewers_with_comments_for_pull_requests(
             metadata = review_metadata[i]
             comment_count = len(comments) if comments else 0
 
-            reviewer_data.append({
-                "user": metadata["user"],
-                "review_id": metadata["review_id"],
-                "pull_number": metadata["pull_number"],
-                "comment_count": comment_count,
-                "submitted_at": metadata["submitted_at"],
-            })
+            reviewer_data.append(
+                {
+                    "user": metadata["user"],
+                    "review_id": metadata["review_id"],
+                    "pull_number": metadata["pull_number"],
+                    "comment_count": comment_count,
+                    "submitted_at": metadata["submitted_at"],
+                },
+            )
 
         return reviewer_data
 

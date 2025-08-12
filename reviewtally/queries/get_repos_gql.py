@@ -62,20 +62,23 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     return [
         repo["name"]
         for repo in data["data"]["organization"]["repositories"]["nodes"]
-        if not languages or any(
-            node["name"].lower() in
-                [language.lower() for language in languages]
-            for node in repo["languages"]["nodes"])
+        if not languages
+        or any(
+            node["name"].lower()
+            in [language.lower() for language in languages]
+            for node in repo["languages"]["nodes"]
+        )
     ]
 
 
 def get_repos(
-    org_name: str, languages: list[str],
+    org_name: str,
+    languages: list[str],
 ) -> list[str] | None:
     try:
         return list(get_repos_by_language(org_name, languages))
     except requests.exceptions.HTTPError as e:
-        print(HTTPErrorBadTokenError(f"{e}")) #noqa: T201
+        print(HTTPErrorBadTokenError(f"{e}"))  # noqa: T201
         sys.exit(1)
     except GitHubTokenNotDefinedError as e:
         print("Error:", e)  # noqa: T201

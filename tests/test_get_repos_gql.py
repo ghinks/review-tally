@@ -31,7 +31,7 @@ class TestGetReposByLanguage(unittest.TestCase):
                                     "nodes": [
                                         {"name": "Java"},
                                         {"name": "C++"},
-                                     ],
+                                    ],
                                 },
                             },
                         ],
@@ -49,6 +49,7 @@ class TestGetReposByLanguage(unittest.TestCase):
         # Test with an empty language list
         repos = get_repos_by_language("test_org", [])
         assert repos == ["repo1", "repo2"]
+
 
 if __name__ == "__main__":
     unittest.main()

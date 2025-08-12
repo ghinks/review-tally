@@ -8,6 +8,7 @@ def read_reviews_file() -> str:
     with Path("tests/fixtures/reviews_response.json").open("r") as file:
         return json.load(file)
 
+
 def get_reviews_url(owner: str, repo: str, pull_number: int) -> str:
     return f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/reviews"
 
@@ -34,8 +35,25 @@ def read_empty_comments_file() -> list[dict]:
         return json.load(file)
 
 
+def read_reviews_missing_submitted_at_file() -> list[dict]:
+    with Path("tests/fixtures/reviews_missing_submitted_at.json").open(
+        "r",
+    ) as file:
+        return json.load(file)
+
+
+def read_empty_comments_for_missing_submitted_at_file() -> list[dict]:
+    with Path(
+        "tests/fixtures/empty_comments_for_missing_submitted_at.json",
+    ).open("r") as file:
+        return json.load(file)
+
+
 def get_review_comments_url(
-    owner: str, repo: str, pull_number: int, review_id: int,
+    owner: str,
+    repo: str,
+    pull_number: int,
+    review_id: int,
 ) -> str:
     return (
         f"https://api.github.com/repos/{owner}/{repo}"
