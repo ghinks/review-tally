@@ -242,10 +242,9 @@ class TestGetReviewersWithComments(unittest.TestCase):
         assert results[0]["comment_count"] == self.EXPECTED_COMMENT_COUNT
 
     @aioresponses()
-    def test_get_reviewers_with_comments_missing_submitted_at_uses_comment_timestamp(
+    def test_get_revs_comments_miss_sub_at_with_timestamp(
         self, mocked: aioresponses,
     ) -> None:
-        """Review missing submitted_at should fall back to latest comment timestamp."""
         pull_numbers = [self.PULL_REQUEST_1]
 
         # Mock the reviews API call with missing submitted_at
@@ -285,7 +284,6 @@ class TestGetReviewersWithComments(unittest.TestCase):
     def test_get_reviewers_with_comments_missing_submitted_at_and_no_comments(
         self, mocked: aioresponses,
     ) -> None:
-        """Review missing submitted_at and with no comments should not crash and have submitted_at None."""
         pull_numbers = [self.PULL_REQUEST_1]
 
         # Mock the reviews API call with missing submitted_at

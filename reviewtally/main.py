@@ -133,6 +133,81 @@ METRIC_INFO = {
     },
 }
 
+def _ensure_reviewer_entry(
+    reviewer_stats: dict[str, dict[str, Any]],
+    login: str,
+) -> None:
+    if login not in reviewer_stats:
+        reviewer_stats[login] = {
+            "reviews": 0,
+            "comments": 0,
+            "engagement_level": "Low",
+            "thoroughness_score": 0,
+            "review_times": [],
+            "pr_created_times": [],
+        }
+
+
+def _append_temporal(
+    reviewer_stats: dict[str, dict[str, Any]],
+    login: str,
+    review_submitted_at: str | None,
+    pr_created_at: str,
+) -> None:
+    if review_submitted_at:
+        reviewer_stats[login]["review_times"].append(review_submitted_at)
+    reviewer_stats[login]["pr_created_times"].append(pr_created_at)
+
+
+def _compute_sprint_label(
+    submitted_at: str | None,
+    sprint_periods: list[tuple[dt.datetime, dt.datetime, str]] | None,
+) -> str | None:
+    if not submitted_at or not sprint_periods:
+        return None
+    review_date = datetime.strptime(
+        submitted_at, "%Y-%m-%dT%H:%M:%SZ",
+    ).replace(
+        tzinfo=timezone.utc,
+    )
+    return get_sprint_for_date(review_date, sprint_periods)
+
+
+def _get_or_init_sprint_bucket(
+    sprint_stats: dict[str, dict[str, Any]] | None,
+    sprint_label: str | None,
+) -> dict[str, Any] | None:
+    if not sprint_stats or not sprint_label:
+        return None
+    if sprint_label not in sprint_stats:
+        sprint_stats[sprint_label] = {
+            "total_reviews": 0,
+            "total_comments": 0,
+            "unique_reviewers": set(),
+            "review_times": [],
+            "pr_created_times": [],
+        }
+    return sprint_stats[sprint_label]
+
+
+def _update_sprint_bucket(
+    bucket: dict[str, Any] | None,
+    login: str,
+    comment_count: int,
+    review_submitted_at: str | None,
+    pr_created_at: str,
+) -> None:
+    if bucket is None:
+        return
+    bucket["total_reviews"] += 1
+    bucket["total_comments"] += comment_count
+    bucket["unique_reviewers"].add(login)
+    if review_submitted_at:
+        bucket["review_times"].append(review_submitted_at)
+    bucket["pr_created_times"].append(pr_created_at)
+
+
+
 def collect_review_data(context: ReviewDataContext) -> None:
     # Create PR lookup for temporal data
     pr_lookup = {pr["number"]: pr for pr in context.pull_requests}
@@ -156,61 +231,39 @@ def collect_review_data(context: ReviewDataContext) -> None:
             pr_number = review["pull_number"]
             review_submitted_at = review.get("submitted_at")
 
-            if login not in context.reviewer_stats:
-                context.reviewer_stats[login] = {
-                    "reviews": 0,
-                    "comments": 0,
-                    "engagement_level": "Low",
-                    "thoroughness_score": 0,
-                    "review_times": [],
-                    "pr_created_times": [],
-                }
-
+            _ensure_reviewer_entry(context.reviewer_stats, login)
             context.reviewer_stats[login]["reviews"] += 1
             context.reviewer_stats[login]["comments"] += comment_count
 
-            # Store temporal data for time-based metrics
-            if review_submitted_at:
-                context.reviewer_stats[login]["review_times"].append(review_submitted_at)
-            context.reviewer_stats[login]["pr_created_times"].append(
-                pr_lookup[pr_number]["created_at"],
+            pr_created_at = pr_lookup[pr_number]["created_at"]
+            _append_temporal(
+                context.reviewer_stats,
+                login,
+                review_submitted_at,
+                pr_created_at,
             )
 
             # Sprint-based aggregation (if enabled)
-            if (context.sprint_stats
-                    is not None
-                and context.sprint_periods is not None):
-                if review_submitted_at:
-                    review_date = datetime.strptime(
-                        review_submitted_at, "%Y-%m-%dT%H:%M:%SZ",
-                    ).replace(tzinfo=timezone.utc)
-                    sprint_label = get_sprint_for_date(review_date,
-                                                       context.sprint_periods)
-                else:
-                    sprint_label = None
-
-                if sprint_label and sprint_label not in context.sprint_stats:
-                    context.sprint_stats[sprint_label] = {
-                        "total_reviews": 0,
-                        "total_comments": 0,
-                        "unique_reviewers": set(),
-                        "review_times": [],
-                        "pr_created_times": [],
-                    }
-
-                if sprint_label:
-                    context.sprint_stats[sprint_label]["total_reviews"] += 1
-                    context.sprint_stats[sprint_label]["total_comments"] \
-                        += comment_count
-                    context.sprint_stats[sprint_label]["unique_reviewers"]\
-                        .add(login)
-                    if review_submitted_at:
-                        context.sprint_stats[sprint_label]["review_times"].append(
-                            review_submitted_at,
-                        )
-                    context.sprint_stats[sprint_label]["pr_created_times"].append(
-                        pr_lookup[pr_number]["created_at"],
-                    )
+            sprint_label = None
+            if (
+                context.sprint_stats is not None
+                and context.sprint_periods is not None
+            ):
+                sprint_label = _compute_sprint_label(
+                    review_submitted_at,
+                    context.sprint_periods,
+                )
+            bucket = _get_or_init_sprint_bucket(
+                context.sprint_stats,
+                sprint_label,
+            )
+            _update_sprint_bucket(
+                bucket,
+                login,
+                comment_count,
+                review_submitted_at,
+                pr_created_at,
+            )
 
 
 def process_repositories(context: ProcessRepositoriesContext) \

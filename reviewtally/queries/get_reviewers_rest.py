@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import asyncio
+import logging
 import os
 import random
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
-import logging
-
-logger = logging.getLogger(__name__)
 
 from reviewtally.queries import (
     AIOHTTP_TIMEOUT,
@@ -21,6 +25,8 @@ from reviewtally.queries import (
     RETRYABLE_STATUS_CODES,
     SSL_CONTEXT,
 )
+
+logger = logging.getLogger(__name__)
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 # get proxy settings from environment variables
@@ -115,28 +121,31 @@ def get_reviewers_for_pull_requests(
     return [item["user"] for sublist in reviewers for item in sublist]
 
 
-def get_reviewers_with_comments_for_pull_requests(
-    owner: str, repo: str, pull_numbers: list[int],
-) -> list[dict]:
-    # First, get all reviews for the pull requests
-    review_urls = [
+def _build_review_urls(owner: str, repo: str, pull_numbers: list[int]) \
+        -> list[str]:
+    return [
         f"https://api.github.com/repos/{owner}/{repo}"
         f"/pulls/{pull_number}/reviews"
         for pull_number in pull_numbers
     ]
-    reviews_response = asyncio.run(fetch_batch(review_urls))
 
-    # Collect all comment URLs for batch fetching
-    comment_urls = []
-    review_metadata = []
+
+def _prepare_comment_fetch(
+    reviews_response: Sequence[list[dict]],
+    pull_numbers: list[int],
+    owner: str,
+    repo: str,
+) -> tuple[list[str], list[dict]]:
+    comment_urls: list[str] = []
+    review_metadata: list[dict] = []
 
     for i, sublist in enumerate(reviews_response):
         pull_number = pull_numbers[i]
         for review in sublist:
             user = review["user"]
             review_id = review["id"]
-            # submitted_at can be missing for some review states (e.g., PENDING)
-            submitted_at = review.get("submitted_at") or review.get("submittedAt")
+            submitted_at = review.get("submitted_at") \
+                or review.get("submittedAt")
             state = review.get("state")
 
             comment_url = (
@@ -151,47 +160,64 @@ def get_reviewers_with_comments_for_pull_requests(
                 "submitted_at": submitted_at,
                 "state": state,
             })
+    return comment_urls, review_metadata
 
-    # Fetch all comments in batches
-    if comment_urls:
-        comments_response = asyncio.run(
-            fetch_batch(comment_urls),
-        )
 
-        # Combine the data
-        reviewer_data = []
-        for i, comments in enumerate(comments_response):
-            metadata = review_metadata[i]
-            comment_count = len(comments) if comments else 0
+def _derive_submitted_at(metadata: dict, comments: list[dict] | None) \
+        -> str | None:
+    submitted_at = metadata.get("submitted_at")
+    if submitted_at:
+        return submitted_at
 
-            # Fallback: if submitted_at is missing, derive from comments timestamps
-            submitted_at = metadata.get("submitted_at")
-            if not submitted_at:
-                if comments:
-                    # Use the latest available timestamp from comments
-                    timestamps: list[str] = []
-                    for c in comments:
-                        ts = c.get("created_at") or c.get("updated_at")
-                        if ts:
-                            timestamps.append(ts)
-                    if timestamps:
-                        submitted_at = max(timestamps)
-                if not submitted_at:
-                    logger.warning(
-                        "Missing submitted_at for review_id=%s state=%s PR#%s",
-                        metadata.get("review_id"),
-                        metadata.get("state"),
-                        metadata.get("pull_number"),
-                    )
+    if comments:
+        timestamps: list[str] = []
+        for c in comments:
+            ts = c.get("created_at") or c.get("updated_at")
+            if ts:
+                timestamps.append(ts)
+        if timestamps:
+            return max(timestamps)
 
-            reviewer_data.append({
-                "user": metadata["user"],
-                "review_id": metadata["review_id"],
-                "pull_number": metadata["pull_number"],
-                "comment_count": comment_count,
-                "submitted_at": submitted_at,
-            })
+    logger.warning(
+        "Missing submitted_at for review_id=%s state=%s PR#%s",
+        metadata.get("review_id"),
+        metadata.get("state"),
+        metadata.get("pull_number"),
+    )
+    return None
 
-        return reviewer_data
 
-    return []
+def _combine_metadata_with_comments(
+    review_metadata:
+        list[dict], comments_response: Sequence[list[dict]] | tuple,
+) -> list[dict]:
+    reviewer_data: list[dict] = []
+    for i, comments in enumerate(comments_response):
+        metadata = review_metadata[i]
+        comment_count = len(comments) if comments else 0
+        submitted_at = _derive_submitted_at(metadata, comments)
+        reviewer_data.append({
+            "user": metadata["user"],
+            "review_id": metadata["review_id"],
+            "pull_number": metadata["pull_number"],
+            "comment_count": comment_count,
+            "submitted_at": submitted_at,
+        })
+    return reviewer_data
+
+
+def get_reviewers_with_comments_for_pull_requests(
+    owner: str, repo: str, pull_numbers: list[int],
+) -> list[dict]:
+    review_urls = _build_review_urls(owner, repo, pull_numbers)
+    reviews_response = asyncio.run(fetch_batch(review_urls))
+
+    comment_urls, review_metadata = _prepare_comment_fetch(
+        reviews_response, pull_numbers, owner, repo,
+    )
+
+    if not comment_urls:
+        return []
+
+    comments_response = asyncio.run(fetch_batch(comment_urls))
+    return _combine_metadata_with_comments(review_metadata, comments_response)
