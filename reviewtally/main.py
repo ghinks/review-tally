@@ -58,7 +58,8 @@ class ProcessRepositoriesContext:
 def timestamped_print(message: str) -> None:
     if DEBUG_FLAG:
         print(  # noqa: T201
-            f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}", flush=True,
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {message}",
+            flush=True,
         )
 
 
@@ -133,18 +134,21 @@ METRIC_INFO = {
     },
 }
 
+
 def collect_review_data(context: ReviewDataContext) -> None:
     # Create PR lookup for temporal data
     pr_lookup = {pr["number"]: pr for pr in context.pull_requests}
 
     pr_numbers = [pr["number"] for pr in context.pull_requests]
     pr_numbers_batched = [
-        pr_numbers[i: i + BATCH_SIZE]
+        pr_numbers[i : i + BATCH_SIZE]
         for i in range(0, len(pr_numbers), BATCH_SIZE)
     ]
     for pr_numbers_batch in pr_numbers_batched:
         reviewer_data = get_reviewers_with_comments_for_pull_requests(
-            context.org_name, context.repo, pr_numbers_batch,
+            context.org_name,
+            context.repo,
+            pr_numbers_batch,
         )
         for review in reviewer_data:
             user = review["user"]
@@ -154,7 +158,7 @@ def collect_review_data(context: ReviewDataContext) -> None:
             login: str = user["login"]
             comment_count = review["comment_count"]
             pr_number = review["pull_number"]
-            review_submitted_at = review["submitted_at"]
+            review_submitted_at = review.get("submitted_at")
 
             if login not in context.reviewer_stats:
                 context.reviewer_stats[login] = {
@@ -169,21 +173,35 @@ def collect_review_data(context: ReviewDataContext) -> None:
             context.reviewer_stats[login]["reviews"] += 1
             context.reviewer_stats[login]["comments"] += comment_count
 
-            # Store temporal data for time-based metrics
-            context.reviewer_stats[login]["review_times"].append(review_submitted_at)
-            context.reviewer_stats[login]["pr_created_times"].append(
-                pr_lookup[pr_number]["created_at"],
-            )
+            # Store temporal data for time metrics only if submitted_at exists
+            if review_submitted_at is not None:
+                context.reviewer_stats[login]["review_times"].append(
+                    review_submitted_at,
+                )
+                context.reviewer_stats[login]["pr_created_times"].append(
+                    pr_lookup[pr_number]["created_at"],
+                )
+            else:
+                # Log when we skip time-based metrics due to missing timestamp
+                print(  # noqa: T201
+                    f"Warning: Skipping time metrics for review by {login} "
+                    f"on PR {pr_number} (missing submitted_at)",
+                )
 
-            # Sprint-based aggregation (if enabled)
-            if (context.sprint_stats
-                    is not None
-                and context.sprint_periods is not None):
+            # Sprint-based aggregation (if enabled and submitted_at exists)
+            if (
+                context.sprint_stats is not None
+                and context.sprint_periods is not None
+                and review_submitted_at is not None
+            ):
                 review_date = datetime.strptime(
-                    review_submitted_at, "%Y-%m-%dT%H:%M:%SZ",
+                    review_submitted_at,
+                    "%Y-%m-%dT%H:%M:%SZ",
                 ).replace(tzinfo=timezone.utc)
-                sprint_label = get_sprint_for_date(review_date,
-                                                   context.sprint_periods)
+                sprint_label = get_sprint_for_date(
+                    review_date,
+                    context.sprint_periods,
+                )
 
                 if sprint_label not in context.sprint_stats:
                     context.sprint_stats[sprint_label] = {
@@ -195,20 +213,33 @@ def collect_review_data(context: ReviewDataContext) -> None:
                     }
 
                 context.sprint_stats[sprint_label]["total_reviews"] += 1
-                context.sprint_stats[sprint_label]["total_comments"] \
-                    += comment_count
-                context.sprint_stats[sprint_label]["unique_reviewers"]\
-                    .add(login)
+                context.sprint_stats[sprint_label]["total_comments"] += (
+                    comment_count
+                )
+                context.sprint_stats[sprint_label]["unique_reviewers"].add(
+                    login,
+                )
                 context.sprint_stats[sprint_label]["review_times"].append(
                     review_submitted_at,
                 )
                 context.sprint_stats[sprint_label]["pr_created_times"].append(
                     pr_lookup[pr_number]["created_at"],
                 )
+            elif (
+                context.sprint_stats is not None
+                and review_submitted_at is None
+            ):
+                # Log when we skip sprint aggregation due to missing timestamp
+                print(  # noqa: T201
+                    f"Warning: Skipping sprint "
+                    f"aggregation for review by {login} "
+                    f"on PR {pr_number} (missing submitted_at)",
+                )
 
 
-def process_repositories(context: ProcessRepositoriesContext) \
-        -> dict[str, dict[str, Any]]:
+def process_repositories(
+    context: ProcessRepositoriesContext,
+) -> dict[str, dict[str, Any]]:
     reviewer_stats: dict[str, dict[str, Any]] = {}
 
     for repo in context.repo_names:
@@ -224,8 +255,9 @@ def process_repositories(context: ProcessRepositoriesContext) \
             f"{time.time() - context.start_time:.2f} seconds for "
             f"{len(pull_requests)} pull requests",
         )
-        context.repo_names.\
-            set_description(f"Processing {context.org_name}/{repo}")
+        context.repo_names.set_description(
+            f"Processing {context.org_name}/{repo}",
+        )
         review_context = ReviewDataContext(
             org_name=context.org_name,
             repo=repo,
@@ -244,7 +276,8 @@ def process_repositories(context: ProcessRepositoriesContext) \
 
 
 def calculate_time_metrics(
-    review_times: list[str], pr_created_times: list[str],
+    review_times: list[str],
+    pr_created_times: list[str],
 ) -> dict[str, Any]:
     """Calculate time-based metrics from review and PR creation timestamps."""
     if not review_times or not pr_created_times:
@@ -271,7 +304,8 @@ def calculate_time_metrics(
     # Calculate response times (PR creation to review)
     response_times = []
     for created_time, review_time in zip(
-        pr_created_datetimes, review_datetimes,
+        pr_created_datetimes,
+        review_datetimes,
     ):
         if review_time >= created_time:
             response_times.append(
@@ -280,18 +314,15 @@ def calculate_time_metrics(
             )
 
     avg_response_time = (
-        sum(response_times) / len(response_times)
-        if response_times
-        else 0.0
+        sum(response_times) / len(response_times) if response_times else 0.0
     )
 
     # Calculate completion time (first to last review)
     if len(review_datetimes) > 1:
         sorted_reviews = sorted(review_datetimes)
         completion_time = (
-            (sorted_reviews[-1] - sorted_reviews[0]).total_seconds()
-            / SECONDS_PER_HOUR
-        )
+            sorted_reviews[-1] - sorted_reviews[0]
+        ).total_seconds() / SECONDS_PER_HOUR
     else:
         completion_time = 0.0
 
@@ -311,9 +342,7 @@ def calculate_reviewer_metrics(
 ) -> None:
     for stats in reviewer_stats.values():
         avg_comments = (
-            stats["comments"] / stats["reviews"]
-            if stats["reviews"] > 0
-            else 0
+            stats["comments"] / stats["reviews"] if stats["reviews"] > 0 else 0
         )
 
         # Review engagement level
@@ -339,24 +368,29 @@ def calculate_reviewer_metrics(
 
 
 def generate_results_table(
-    reviewer_stats: dict[str, dict[str, Any]], metrics: list[str],
+    reviewer_stats: dict[str, dict[str, Any]],
+    metrics: list[str],
 ) -> str:
     # Build headers and table data based on selected metrics
     headers = ["User"]
-    headers.extend([
-        str(METRIC_INFO[metric]["header"])
-        for metric in metrics
-        if metric in METRIC_INFO
-    ])
+    headers.extend(
+        [
+            str(METRIC_INFO[metric]["header"])
+            for metric in metrics
+            if metric in METRIC_INFO
+        ],
+    )
 
     table = []
     for login, stats in reviewer_stats.items():
         row = [login]
-        row.extend([
-            str(cast("Any", METRIC_INFO[metric]["getter"])(stats))
-            for metric in metrics
-            if metric in METRIC_INFO
-        ])
+        row.extend(
+            [
+                str(cast("Any", METRIC_INFO[metric]["getter"])(stats))
+                for metric in metrics
+                if metric in METRIC_INFO
+            ],
+        )
         table.append(row)
 
     # Sort by the number of PRs reviewed and comments
@@ -455,7 +489,8 @@ def main() -> None:
         calculate_reviewer_metrics(reviewer_stats)
 
         timestamped_print(
-            f"Printing results {time.time() - start_time:.2f} seconds")
+            f"Printing results {time.time() - start_time:.2f} seconds",
+        )
 
         results_table = generate_results_table(reviewer_stats, metrics)
         print(results_table)  # noqa: T201

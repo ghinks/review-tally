@@ -7,7 +7,8 @@ MEDIUM_ENGAGEMENT_THRESHOLD = 0.5
 
 
 def calculate_team_time_metrics(
-    review_times: list[str], pr_created_times: list[str],
+    review_times: list[str],
+    pr_created_times: list[str],
 ) -> dict[str, Any]:
     """Calculate time-based metrics from review and PR creation timestamps."""
     if not review_times or not pr_created_times:
@@ -34,7 +35,8 @@ def calculate_team_time_metrics(
     # Calculate response times (PR creation to review)
     response_times = []
     for created_time, review_time in zip(
-        pr_created_datetimes, review_datetimes,
+        pr_created_datetimes,
+        review_datetimes,
     ):
         if review_time >= created_time:
             response_times.append(
@@ -43,18 +45,15 @@ def calculate_team_time_metrics(
             )
 
     avg_response_time = (
-        sum(response_times) / len(response_times)
-        if response_times
-        else 0.0
+        sum(response_times) / len(response_times) if response_times else 0.0
     )
 
     # Calculate completion time (first to last review)
     if len(review_datetimes) > 1:
         sorted_reviews = sorted(review_datetimes)
         completion_time = (
-            (sorted_reviews[-1] - sorted_reviews[0]).total_seconds()
-            / SECONDS_PER_HOUR
-        )
+            sorted_reviews[-1] - sorted_reviews[0]
+        ).total_seconds() / SECONDS_PER_HOUR
     else:
         completion_time = 0.0
 
@@ -112,7 +111,8 @@ def calculate_sprint_team_metrics(
 
         # Add time-based team metrics
         time_metrics = calculate_team_time_metrics(
-            data["review_times"], data["pr_created_times"],
+            data["review_times"],
+            data["pr_created_times"],
         )
         team_metrics[sprint].update(time_metrics)
 

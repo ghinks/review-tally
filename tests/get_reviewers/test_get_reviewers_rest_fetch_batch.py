@@ -11,11 +11,9 @@ class TestFetchBatch(unittest.TestCase):
     @aioresponses()
     def test_fetch_json(self, mocked: aioresponses) -> None:
         payload = read_reviews_file()
-        urls =[]
+        urls = []
         for pull_number in range(2):
-            url = get_reviews_url("expressjs",
-                                       "express",
-                                       pull_number)
+            url = get_reviews_url("expressjs", "express", pull_number)
             urls.append(url)
             mocked.get(url, status=200, payload=payload)
 

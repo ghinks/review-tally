@@ -223,7 +223,10 @@ class TestCalculateSprintTeamMetrics(unittest.TestCase):
         self.assertEqual(sprint1["total_comments"], 25)
         self.assertEqual(sprint1["unique_reviewers"], 3)  # Converted from set
         self.assertEqual(sprint1["avg_comments_per_review"], 2.5)  # 25/10
-        self.assertEqual(sprint1["reviews_per_reviewer"], 10/3)  # 10/3 ≈ 3.33
+        self.assertEqual(
+            sprint1["reviews_per_reviewer"],
+            10 / 3,
+        )  # 10/3 ≈ 3.33
         self.assertEqual(sprint1["team_engagement"], "High")  # 2.5 >= 2.0
 
         # Check second sprint metrics
@@ -306,7 +309,8 @@ class TestCalculateSprintTeamMetrics(unittest.TestCase):
 
         self.assertEqual(result["high_engagement"]["team_engagement"], "High")
         self.assertEqual(
-            result["medium_engagement"]["team_engagement"], "Medium",
+            result["medium_engagement"]["team_engagement"],
+            "Medium",
         )
         self.assertEqual(result["low_engagement"]["team_engagement"], "Low")
 
@@ -352,7 +356,9 @@ class TestCalculateSprintTeamMetrics(unittest.TestCase):
 
         # 7/3 = 2.333...
         self.assertAlmostEqual(
-            sprint["avg_comments_per_review"], 7/3, places=10,
+            sprint["avg_comments_per_review"],
+            7 / 3,
+            places=10,
         )
         # 3/2 = 1.5
         self.assertEqual(sprint["reviews_per_reviewer"], 1.5)

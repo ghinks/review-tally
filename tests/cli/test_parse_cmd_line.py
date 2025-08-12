@@ -27,7 +27,10 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
     @patch("builtins.print")
     @patch("sys.argv")
     def test_malformed_start_date_exits(
-        self, mock_argv: Any, mock_print: Any, mock_exit: Any,
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
     ) -> None:
         """Test that malformed start date triggers sys.exit(1)."""
         # Arrange
@@ -58,7 +61,10 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
     @patch("builtins.print")
     @patch("sys.argv")
     def test_malformed_end_date_exits(
-        self, mock_argv: Any, mock_print: Any, mock_exit: Any,
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
     ) -> None:
         """Test that malformed end date triggers sys.exit(1)."""
         # Arrange
@@ -89,7 +95,10 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
     @patch("builtins.print")
     @patch("sys.argv")
     def test_invalid_month_date_exits(
-        self, mock_argv: Any, mock_print: Any, mock_exit: Any,
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
     ) -> None:
         """Test that invalid month in date triggers sys.exit(1)."""
         # Arrange
@@ -119,7 +128,10 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
     @patch("builtins.print")
     @patch("sys.argv")
     def test_invalid_day_date_exits(
-        self, mock_argv: Any, mock_print: Any, mock_exit: Any,
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
     ) -> None:
         """Test that invalid day in date triggers sys.exit(1)."""
         # Arrange
@@ -149,7 +161,10 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
     @patch("builtins.print")
     @patch("sys.argv")
     def test_wrong_date_format_exits(
-        self, mock_argv: Any, mock_print: Any, mock_exit: Any,
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
     ) -> None:
         """Test that wrong date format triggers sys.exit(1)."""
         # Arrange
@@ -217,7 +232,10 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
     @patch("builtins.print")
     @patch("sys.argv")
     def test_both_dates_malformed_start_fails_first(
-        self, mock_argv: Any, mock_print: Any, mock_exit: Any,
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
     ) -> None:
         """Test when both dates are malformed, start date fails first."""
         # Arrange - both dates malformed but start date should be checked first
@@ -248,7 +266,10 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
     @patch("builtins.print")
     @patch("sys.argv")
     def test_malformed_date_error_message_format(
-        self, mock_argv: Any, mock_print: Any, mock_exit: Any,
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
     ) -> None:
         """Test MalformedDateError produces correctly formatted message."""
         # Arrange

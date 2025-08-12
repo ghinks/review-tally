@@ -8,7 +8,8 @@ if TYPE_CHECKING:
 
 
 def calculate_sprint_periods(
-    start_date: dt.datetime, end_date: dt.datetime,
+    start_date: dt.datetime,
+    end_date: dt.datetime,
 ) -> list[tuple[dt.datetime, dt.datetime, str]]:
     """Generate 14-day sprint periods with labels."""
     periods = []

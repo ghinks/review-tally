@@ -185,7 +185,14 @@ class TestGetSprintForDate(unittest.TestCase):
         """Test date matching works with microseconds."""
         # Date with microseconds within a sprint period
         test_date = datetime(
-            2025, 1, 10, 14, 30, 45, 123456, tzinfo=timezone.utc,
+            2025,
+            1,
+            10,
+            14,
+            30,
+            45,
+            123456,
+            tzinfo=timezone.utc,
         )
         sprint = get_sprint_for_date(test_date, self.sprint_periods)
         self.assertEqual(sprint, "Sprint-1")
