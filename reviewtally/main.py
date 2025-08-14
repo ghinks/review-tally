@@ -371,7 +371,7 @@ def generate_results_table(
     reviewer_stats: dict[str, dict[str, Any]],
     metrics: list[str],
 ) -> str:
-    # Build headers and table data based on selected metrics
+    # Build headers based on selected metrics
     headers = ["User"]
     headers.extend(
         [
@@ -381,8 +381,18 @@ def generate_results_table(
         ],
     )
 
-    table = []
-    for login, stats in reviewer_stats.items():
+    # Sort by raw numeric values to avoid parsing formatted strings
+    sorted_items = sorted(
+        reviewer_stats.items(),
+        key=lambda kv: (
+            kv[1].get("reviews", 0),
+            kv[1].get("comments", 0),
+        ),
+        reverse=True,
+    )
+
+    table: list[list[str]] = []
+    for login, stats in sorted_items:
         row = [login]
         row.extend(
             [
@@ -393,13 +403,6 @@ def generate_results_table(
         )
         table.append(row)
 
-    # Sort by the number of PRs reviewed and comments
-    def sort_key(x: list) -> tuple[int, int]:
-        reviews = int(x[1]) if len(x) > 1 else 0
-        comments = int(x[2]) if len(x) > 2 else 0  # noqa: PLR2004
-        return (reviews, comments)
-
-    table = sorted(table, key=sort_key, reverse=True)
     return tabulate(table, headers)
 
 
