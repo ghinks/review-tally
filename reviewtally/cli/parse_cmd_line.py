@@ -25,6 +25,10 @@ def parse_cmd_line() -> tuple[
     list[str],
     bool,
     str | None,
+    bool,
+    str,
+    list[str],
+    str | None,
 ]:  # type: ignore[return-value]
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare
@@ -64,7 +68,8 @@ def parse_cmd_line() -> tuple[
     # add the metrics selection argument
     metrics_help = (
         "Comma-separated list of metrics to display "
-        "(reviews,comments,avg-comments,engagement,thoroughness,response-time,completion-time,active-days)"
+        "(reviews,comments,avg-comments,engagement,thoroughness,"
+        "response-time,completion-time,active-days)"
     )
     parser.add_argument(
         "-m",
@@ -92,6 +97,37 @@ def parse_cmd_line() -> tuple[
         "--output-path",
         help="Output CSV file path for sprint data",
     )
+
+    # plotting options for sprint analysis
+    parser.add_argument(
+        "--plot-sprint",
+        action="store_true",
+        help=(
+            "Plot sprint metrics as an interactive chart (opens browser)"
+        ),
+    )
+    parser.add_argument(
+        "--chart-type",
+        choices=["bar", "line"],
+        default="bar",
+        help="Chart type for sprint metrics (bar or line)",
+    )
+    parser.add_argument(
+        "--chart-metrics",
+        default="total_reviews,total_comments",
+        help=(
+            "Comma-separated sprint metrics to plot. "
+            "Supported: total_reviews,total_comments,unique_reviewers,"
+            "avg_comments_per_review,reviews_per_reviewer,"
+            "avg_response_time_hours,avg_completion_time_hours,"
+            "active_review_days"
+        ),
+    )
+    parser.add_argument(
+        "--save-plot",
+        help="Optional path to save the interactive HTML chart",
+    )
+
     args = parser.parse_args()
     # catch ValueError if the date format is not correct
     try:
@@ -130,6 +166,12 @@ def parse_cmd_line() -> tuple[
     else:
         metrics = [args.metrics]
 
+    # parse chart metrics argument
+    if args.chart_metrics and "," in args.chart_metrics:
+        chart_metrics = args.chart_metrics.split(",")
+    else:
+        chart_metrics = [args.chart_metrics]
+
     return (
         args.org,
         start_date,
@@ -138,4 +180,8 @@ def parse_cmd_line() -> tuple[
         metrics,
         args.sprint_analysis,
         args.output_path,
+        args.plot_sprint,
+        args.chart_type,
+        chart_metrics,
+        args.save_plot,
     )
