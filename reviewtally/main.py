@@ -366,8 +366,7 @@ def calculate_reviewer_metrics(
         )
         stats.update(time_metrics)
 
-
-def generate_results_table(
+def generate_results_table( #noqa: C901
     reviewer_stats: dict[str, dict[str, Any]],
     metrics: list[str],
 ) -> str:
@@ -381,7 +380,33 @@ def generate_results_table(
         ],
     )
 
-    table = []
+    # Resolve indices for robust sorting (may be absent depending on metrics)
+    try:
+        reviews_idx = headers.index("Reviews")
+    except ValueError:
+        reviews_idx = -1
+    try:
+        comments_idx = headers.index("Comments")
+    except ValueError:
+        comments_idx = -1
+
+    def _safe_int(value: float | str) -> int:
+        if isinstance(value, int):
+            return value
+        if isinstance(value, float):
+            return int(value)
+        if isinstance(value, str):
+            s = value.strip()
+            try:
+                return int(s)
+            except ValueError:
+                try:
+                    return int(float(s))
+                except ValueError:
+                    return 0
+        return 0
+
+    table: list[list[Any]] = []
     for login, stats in reviewer_stats.items():
         row = [login]
         row.extend(
@@ -393,10 +418,18 @@ def generate_results_table(
         )
         table.append(row)
 
-    # Sort by the number of PRs reviewed and comments
-    def sort_key(x: list) -> tuple[int, int]:
-        reviews = int(x[1]) if len(x) > 1 else 0
-        comments = int(x[2]) if len(x) > 2 else 0  # noqa: PLR2004
+    # Sort primarily by Reviews, then by Comments; missing or non-numeric -> 0
+    def sort_key(row: list[Any]) -> tuple[int, int]:
+        reviews = (
+            _safe_int(row[reviews_idx])
+            if 0 <= reviews_idx < len(row)
+            else 0
+        )
+        comments = (
+            _safe_int(row[comments_idx])
+            if 0 <= comments_idx < len(row)
+            else 0
+        )
         return (reviews, comments)
 
     table = sorted(table, key=sort_key, reverse=True)
