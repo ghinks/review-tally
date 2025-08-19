@@ -495,7 +495,7 @@ def main() -> None:
                     title=title,
                     save_path=save_plot,
                 )
-            except Exception as e:  # pragma: no cover - plotting env issues
+            except Exception as e:  # noqa: BLE001 pragma: no cover - plotting env issues
                 print(f"Plotting failed: {e}")  # noqa: T201
     else:
         # Normal mode - individual reviewer stats

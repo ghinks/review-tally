@@ -17,7 +17,7 @@ def print_toml_version() -> None:
     print(f"Current version is {version}")  # noqa: T201
 
 
-def parse_cmd_line() -> tuple[
+def parse_cmd_line() -> tuple[ # noqa: C901, PLR0912, PLR0915
     str,
     datetime,
     datetime,
