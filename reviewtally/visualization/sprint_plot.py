@@ -6,8 +6,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 from typing import Any
 
-import plotly.graph_objects as go # type: ignore[import]
-import plotly.io as pio # type: ignore[import]
+import plotly.graph_objects as go  # type: ignore[import]
+import plotly.io as pio  # type: ignore[import]
 
 SUPPORTED_METRICS = {
     "total_reviews": "Total Reviews",
