@@ -26,6 +26,7 @@ from reviewtally.queries.get_repos_gql import (
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
 )
+from reviewtally.visualization.sprint_plot import plot_sprint_metrics
 
 DEBUG_FLAG = False
 
@@ -447,6 +448,10 @@ def main() -> None:
         metrics,
         sprint_analysis,
         output_path,
+        plot_sprint,
+        chart_type,
+        chart_metrics,
+        save_plot,
     ) = parse_cmd_line()
     timestamped_print(
         f"Calling get_repos_by_language {time.time() - start_time:.2f} "
@@ -508,6 +513,23 @@ def main() -> None:
                 print(  # noqa: T201
                     f"  Team Engagement: {sprint_metrics['team_engagement']}",
                 )
+
+        # Plot if requested
+        if plot_sprint:
+            title = (
+                f"Sprint Metrics for {org_name or ''} | "
+                f"{start_date.date()} to {end_date.date()}"
+            ).strip()
+            try:
+                plot_sprint_metrics(
+                    team_metrics=team_metrics,
+                    chart_type=chart_type,
+                    metrics=chart_metrics,
+                    title=title,
+                    save_path=save_plot,
+                )
+            except Exception as e:  # noqa: BLE001 pragma: no cover - plotting env issues
+                print(f"Plotting failed: {e}")  # noqa: T201
     else:
         # Normal mode - individual reviewer stats
         process_context = ProcessRepositoriesContext(
