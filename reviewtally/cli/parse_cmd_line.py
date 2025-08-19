@@ -8,8 +8,25 @@ import argparse
 import importlib.metadata
 import sys
 from datetime import datetime, timedelta, timezone
+from typing import TypedDict
 
 from reviewtally.exceptions.local_exceptions import MalformedDateError
+
+
+class CommandLineArgs(TypedDict):
+    """Type definition for command line arguments returned by parse_cmd_line."""
+    
+    org_name: str
+    start_date: datetime
+    end_date: datetime
+    languages: list[str]
+    metrics: list[str]
+    sprint_analysis: bool
+    output_path: str | None
+    plot_sprint: bool
+    chart_type: str
+    chart_metrics: list[str]
+    save_plot: str | None
 
 
 def print_toml_version() -> None:
@@ -17,19 +34,7 @@ def print_toml_version() -> None:
     print(f"Current version is {version}")  # noqa: T201
 
 
-def parse_cmd_line() -> tuple[ # noqa: C901, PLR0912, PLR0915
-    str,
-    datetime,
-    datetime,
-    list[str],
-    list[str],
-    bool,
-    str | None,
-    bool,
-    str,
-    list[str],
-    str | None,
-]:  # type: ignore[return-value]
+def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare
     a GTIHUB_TOKEN variable with a valid GitHub token.
@@ -172,16 +177,16 @@ def parse_cmd_line() -> tuple[ # noqa: C901, PLR0912, PLR0915
     else:
         chart_metrics = [args.chart_metrics]
 
-    return (
-        args.org,
-        start_date,
-        end_date,
-        languages,
-        metrics,
-        args.sprint_analysis,
-        args.output_path,
-        args.plot_sprint,
-        args.chart_type,
-        chart_metrics,
-        args.save_plot,
+    return CommandLineArgs(
+        org_name=args.org,
+        start_date=start_date,
+        end_date=end_date,
+        languages=languages,
+        metrics=metrics,
+        sprint_analysis=args.sprint_analysis,
+        output_path=args.output_path,
+        plot_sprint=args.plot_sprint,
+        chart_type=args.chart_type,
+        chart_metrics=chart_metrics,
+        save_plot=args.save_plot,
     )
