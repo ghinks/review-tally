@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import patch
 
-from reviewtally.cli.parse_cmd_line import CommandLineArgs, parse_cmd_line
+from reviewtally.cli.parse_cmd_line import parse_cmd_line
 from reviewtally.exceptions.local_exceptions import MalformedDateError
 
 
@@ -217,12 +217,18 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
 
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
-        self.assertEqual(result["start_date"], datetime(2023, 1, 1, tzinfo=timezone.utc))
-        self.assertEqual(result["end_date"], datetime(2023, 1, 15, tzinfo=timezone.utc))
+        self.assertEqual(
+            result["start_date"], datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            result["end_date"], datetime(2023, 1, 15, tzinfo=timezone.utc),
+        )
         # Defaults for new args
         self.assertFalse(result["plot_sprint"])
         self.assertEqual(result["chart_type"], "bar")
-        self.assertEqual(result["chart_metrics"], ["total_reviews", "total_comments"])
+        self.assertEqual(
+            result["chart_metrics"], ["total_reviews", "total_comments"],
+        )
         self.assertIsNone(result["save_plot"])
 
     @patch("sys.exit")

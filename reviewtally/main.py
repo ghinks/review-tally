@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime
 from typing import Any
 
 from tqdm import tqdm
@@ -11,6 +10,7 @@ from reviewtally.analysis.team_metrics import calculate_sprint_team_metrics
 from reviewtally.cli.parse_cmd_line import CommandLineArgs, parse_cmd_line
 from reviewtally.data_collection import (
     ProcessRepositoriesContext,
+    SprintPlottingContext,
     process_repositories,
     timestamped_print,
 )
@@ -54,7 +54,8 @@ def _handle_sprint_analysis(
     start_time: float,
 ) -> None:
     """Handle sprint analysis mode."""
-    sprint_periods = calculate_sprint_periods(args["start_date"], args["end_date"])
+    sprint_periods = (
+        calculate_sprint_periods(args["start_date"], args["end_date"]))
     sprint_stats: dict[str, dict[str, Any]] = {}
 
     process_context = ProcessRepositoriesContext(
@@ -77,15 +78,16 @@ def _handle_sprint_analysis(
         _print_sprint_summary(team_metrics)
 
     if args["plot_sprint"]:
-        _handle_sprint_plotting(
-            team_metrics,
-            args["org_name"],
-            args["start_date"],
-            args["end_date"],
-            args["chart_type"],
-            args["chart_metrics"],
-            args["save_plot"],
+        plotting_context = SprintPlottingContext(
+            team_metrics=team_metrics,
+            org_name=args["org_name"],
+            start_date=args["start_date"],
+            end_date=args["end_date"],
+            chart_type=args["chart_type"],
+            chart_metrics=args["chart_metrics"],
+            save_plot=args["save_plot"],
         )
+        _handle_sprint_plotting(plotting_context)
 
 
 def _handle_individual_analysis(
@@ -136,27 +138,19 @@ def _print_sprint_summary(team_metrics: dict[str, dict[str, Any]]) -> None:
         )
 
 
-def _handle_sprint_plotting(
-    team_metrics: dict[str, dict[str, Any]],
-    org_name: str,
-    start_date: datetime,
-    end_date: datetime,
-    chart_type: str,
-    chart_metrics: list[str],
-    save_plot: str | None,
-) -> None:
+def _handle_sprint_plotting(context: SprintPlottingContext) -> None:
     """Handle sprint plotting functionality."""
     title = (
-        f"Sprint Metrics for {org_name or ''} | "
-        f"{start_date.date()} to {end_date.date()}"
+        f"Sprint Metrics for {context.org_name or ''} | "
+        f"{context.start_date.date()} to {context.end_date.date()}"
     ).strip()
     try:
         plot_sprint_metrics(
-            team_metrics=team_metrics,
-            chart_type=chart_type,
-            metrics=chart_metrics,
+            team_metrics=context.team_metrics,
+            chart_type=context.chart_type,
+            metrics=context.chart_metrics,
             title=title,
-            save_path=save_plot,
+            save_path=context.save_plot,
         )
     except Exception as e:  # noqa: BLE001
         print(f"Plotting failed: {e}")  # noqa: T201

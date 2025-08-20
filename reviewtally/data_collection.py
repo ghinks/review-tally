@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import datetime as dt
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from tqdm import tqdm
+if TYPE_CHECKING:
+    from tqdm import tqdm
 
 from reviewtally.analysis.sprint_periods import get_sprint_for_date
 from reviewtally.exceptions.local_exceptions import LoginNotFoundError
@@ -36,7 +36,7 @@ class ReviewDataContext:
     pull_requests: list
     reviewer_stats: dict[str, dict[str, Any]]
     sprint_stats: dict[str, dict[str, Any]] | None = None
-    sprint_periods: list[tuple[dt.datetime, dt.datetime, str]] | None = None
+    sprint_periods: list[tuple[datetime, datetime, str]] | None = None
 
 
 @dataclass
@@ -45,11 +45,24 @@ class ProcessRepositoriesContext:
 
     org_name: str
     repo_names: tqdm
-    start_date: dt.datetime
-    end_date: dt.datetime
+    start_date: datetime
+    end_date: datetime
     start_time: float
     sprint_stats: dict[str, dict[str, Any]] | None = None
-    sprint_periods: list[tuple[dt.datetime, dt.datetime, str]] | None = None
+    sprint_periods: list[tuple[datetime, datetime, str]] | None = None
+
+
+@dataclass
+class SprintPlottingContext:
+    """Context object for sprint plotting functionality."""
+
+    team_metrics: dict[str, dict[str, Any]]
+    org_name: str
+    start_date: datetime
+    end_date: datetime
+    chart_type: str
+    chart_metrics: list[str]
+    save_plot: str | None
 
 
 def collect_review_data(context: ReviewDataContext) -> None:

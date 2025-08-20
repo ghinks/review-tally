@@ -15,7 +15,7 @@ from reviewtally.exceptions.local_exceptions import MalformedDateError
 
 class CommandLineArgs(TypedDict):
     """Type definition for command line arguments returned by parse_cmd_line."""
-    
+
     org_name: str
     start_date: datetime
     end_date: datetime
