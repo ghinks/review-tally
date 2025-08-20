@@ -211,32 +211,25 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
 
         # Assert
         mock_exit.assert_not_called()
-        self.assertIsInstance(result, tuple)
-        # Updated to 11 values with plotting options
+        self.assertIsInstance(result, dict)
+        # Check it's the right type
         self.assertEqual(len(result), 11)
 
         # Verify the parsed dates
-        (
-            org_name,
-            start_date,
-            end_date,
-            languages,
-            metrics,
-            sprint_analysis,
-            output_path,
-            plot_sprint,
-            chart_type,
-            chart_metrics,
-            save_plot,
-        ) = result
-        self.assertEqual(org_name, "test-org")
-        self.assertEqual(start_date, datetime(2023, 1, 1, tzinfo=timezone.utc))
-        self.assertEqual(end_date, datetime(2023, 1, 15, tzinfo=timezone.utc))
+        self.assertEqual(result["org_name"], "test-org")
+        self.assertEqual(
+            result["start_date"], datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            result["end_date"], datetime(2023, 1, 15, tzinfo=timezone.utc),
+        )
         # Defaults for new args
-        self.assertFalse(plot_sprint)
-        self.assertEqual(chart_type, "bar")
-        self.assertEqual(chart_metrics, ["total_reviews", "total_comments"])
-        self.assertIsNone(save_plot)
+        self.assertFalse(result["plot_sprint"])
+        self.assertEqual(result["chart_type"], "bar")
+        self.assertEqual(
+            result["chart_metrics"], ["total_reviews", "total_comments"],
+        )
+        self.assertIsNone(result["save_plot"])
 
     @patch("sys.exit")
     @patch("builtins.print")

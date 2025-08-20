@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import patch
 
-from reviewtally.main import ReviewDataContext, collect_review_data
+from reviewtally.data_collection import ReviewDataContext, collect_review_data
 
 
 class TestMissingSubmittedAtMain(unittest.TestCase):
@@ -44,7 +44,7 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
             reviewer_stats={},
         )
 
-    @patch("reviewtally.main.get_reviewers_with_comments_for_pull_requests")
+    @patch("reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests")
     @patch("builtins.print")
     def test_collect_review_data_handles_missing_submitted_at(
         self,
@@ -82,7 +82,7 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
             "reviewer_missing_timestamp on PR 12 (missing submitted_at)",
         )
 
-    @patch("reviewtally.main.get_reviewers_with_comments_for_pull_requests")
+    @patch("reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests")
     @patch("builtins.print")
     def test_collect_review_data_sprint_aggregation_missing_submitted_at(
         self,
@@ -155,7 +155,7 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
         # Mock the get_reviewers function
         with (
             patch(
-                "reviewtally.main.get_reviewers_with_comments_for_pull_requests",
+                "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests",
             ) as mock_get_reviewers,
             patch("builtins.print") as mock_print,
         ):
