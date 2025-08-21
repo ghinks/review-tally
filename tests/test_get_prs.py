@@ -10,6 +10,7 @@ from reviewtally.queries.get_prs import (
 class TestGetPullRequestsBetweenDates(unittest.TestCase):
     PR_NUMBER_1 = 1
     PR_NUMBER_2 = 2
+    PR_NUMBER_3 = 3
     # Define the mock response data
     MOCK_RESP_DATA = (
         {
@@ -21,6 +22,11 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
             "created_at": "2023-01-02T12:00:00Z",
             "number": PR_NUMBER_2,
             "title": "Test PR 2",
+        },
+        {
+            "created_at": "2022-01-02T12:00:00Z",
+            "number": PR_NUMBER_3,
+            "title": "Test PR 3",
         },
     )
     EXPECTED_LEN = len(MOCK_RESP_DATA)
@@ -52,7 +58,8 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
 
         # Assert the result
         assert (
-            len(pull_requests) == TestGetPullRequestsBetweenDates.EXPECTED_LEN
+            len(pull_requests) ==
+            TestGetPullRequestsBetweenDates.EXPECTED_LEN - 1
         )
         assert (
             pull_requests[0]["number"]
