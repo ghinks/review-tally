@@ -5,6 +5,7 @@ from typing import Any
 import requests
 
 from reviewtally.queries import GENERAL_TIMEOUT
+from reviewtally.exceptions.local_exceptions import PaginationError
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
@@ -51,5 +52,9 @@ def get_pull_requests_between_dates(
         page += 1
         if created_at < start_date:
             break
+        elif page > 100:
+            raise PaginationError(
+                "Exceeded max num pages (100) fetching PR reviews."
+            )
 
     return pull_requests

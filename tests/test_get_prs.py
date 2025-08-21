@@ -70,6 +70,32 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
             == TestGetPullRequestsBetweenDates.PR_NUMBER_2
         )
 
+    @patch("requests.get")
+    def test_raises_after_100_pages(self, mock_get) -> None:
+        # Always return a non-empty page with a PR newer than end_date,
+        # so pagination continues until the function's max-page limit is hit.
+        def side_effect(*_args, **_kwargs):
+            resp = Mock()
+            resp.status_code = 200
+            resp.json.return_value = (
+                {
+                    "created_at": "2023-01-01T12:00:00Z",
+                    "number": 1,
+                    "title": "PR",
+                },
+            )
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        owner = "test_owner"
+        repo = "test_repo"
+        # Pick an end_date in the far past so the loop doesn't break early.
+        start_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(1970, 1, 2, tzinfo=timezone.utc)
+
+        with self.assertRaises(Exception):
+            get_pull_requests_between_dates(owner, repo, start_date, end_date)
 
 if __name__ == "__main__":
     unittest.main()
