@@ -49,7 +49,7 @@ def get_pull_requests_between_dates(
                 pull_requests.append(pr)
 
         page += 1
-        if created_at < end_date:
+        if created_at < start_date:
             break
 
     return pull_requests
