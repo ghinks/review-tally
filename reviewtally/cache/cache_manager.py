@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 class CacheManager:
     """Main interface for caching GitHub API responses."""
+    
+    cache: SQLiteCache | None
 
     def __init__(
         self, cache_dir: Path | None = None, *, enabled: bool = True,
