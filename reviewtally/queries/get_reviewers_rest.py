@@ -1,6 +1,7 @@
 import asyncio
 import os
 import random
+import time
 from typing import Any
 
 import aiohttp
@@ -26,6 +27,58 @@ HTTPS_PROXY = os.getenv("HTTPS_PROXY")
 if not HTTPS_PROXY:
     HTTPS_PROXY = os.getenv("https_proxy")
 
+# Rate limiting constants
+RATE_LIMIT_BUFFER = 10  # Keep this many requests in reserve
+RATE_LIMIT_MIN_SLEEP = 60  # Minimum sleep time when rate limited (seconds)
+
+
+async def check_rate_limit_and_sleep(response: aiohttp.ClientResponse) -> None:
+    """
+    Check GitHub API rate limit headers and sleep if necessary.
+
+    Args:
+        response: The aiohttp response object containing rate limit headers
+
+    """
+    # GitHub API rate limit headers (case-insensitive)
+    remaining_header = None
+    reset_header = None
+
+    # Check for rate limit headers (GitHub uses different variations)
+    for header_name, header_value in response.headers.items():
+        header_lower = header_name.lower()
+        if header_lower in ("x-ratelimit-remaining", "x-rate-limit-remaining"):
+            remaining_header = header_value
+        elif header_lower in ("x-ratelimit-reset", "x-rate-limit-reset"):
+            reset_header = header_value
+
+    if remaining_header is None or reset_header is None:
+        # No rate limit headers found, continue normally
+        return
+
+    try:
+        remaining = int(remaining_header)
+        reset_timestamp = int(reset_header)
+
+        # If we're getting close to the rate limit, sleep until reset
+        if remaining <= RATE_LIMIT_BUFFER:
+            current_time = int(time.time())
+            sleep_time = max(
+                reset_timestamp - current_time,
+                RATE_LIMIT_MIN_SLEEP,
+            )
+
+            print(  # noqa: T201
+                f"GitHub API rate limit approaching. "
+                f"Remaining: {remaining}, sleeping for {sleep_time} seconds.",
+            )
+
+            await asyncio.sleep(sleep_time)
+
+    except (ValueError, TypeError) as e:
+        # Handle case where header values aren't valid integers
+        print(f"Warning: Could not parse rate limit headers: {e}")  # noqa: T201
+
 
 async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
     headers = {
@@ -48,6 +101,10 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
                         # Final attempt failed
                         response.raise_for_status()
                     response.raise_for_status()  # Raise for other HTTP errors
+
+                    # Check rate limit before proceeding
+                    await check_rate_limit_and_sleep(response)
+
                     return await response.json()
             else:
                 async with client.get(url, headers=headers) as response:
@@ -58,6 +115,10 @@ async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
                         # Final attempt failed
                         response.raise_for_status()
                     response.raise_for_status()  # Raise for other HTTP errors
+
+                    # Check rate limit before proceeding
+                    await check_rate_limit_and_sleep(response)
+
                     return await response.json()
         except (aiohttp.ClientError, asyncio.TimeoutError):
             if attempt < MAX_RETRIES:
