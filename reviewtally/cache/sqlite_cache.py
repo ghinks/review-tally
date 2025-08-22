@@ -17,7 +17,8 @@ class SQLiteCache:
         Initialize SQLite cache.
 
         Args:
-            cache_dir: Directory for cache database. Defaults to ~/.review-tally-cache
+            cache_dir: Directory for cache database.
+                Defaults to ~/.review-tally-cache
 
         """
         if cache_dir is None:
@@ -106,9 +107,13 @@ class SQLiteCache:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 INSERT OR REPLACE INTO api_cache
-                (cache_key, data, cached_at, expires_at, content_hash, metadata)
+                (cache_key, data, cached_at, expires_at, content_hash,
+                 metadata)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (key, data_json, current_time, expires_at, content_hash, metadata_json))
+            """, (
+                key, data_json, current_time, expires_at,
+                content_hash, metadata_json,
+            ))
 
             conn.commit()
 
@@ -124,7 +129,9 @@ class SQLiteCache:
 
         """
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (key,))
+            cursor = conn.execute(
+                "DELETE FROM api_cache WHERE cache_key = ?", (key,),
+            )
             conn.commit()
             return cursor.rowcount > 0
 
@@ -182,11 +189,15 @@ class SQLiteCache:
             expired_entries = expired_cursor.fetchone()[0]
 
             # Cache size
-            size_cursor = conn.execute("SELECT SUM(LENGTH(data)) FROM api_cache")
+            size_cursor = conn.execute(
+                "SELECT SUM(LENGTH(data)) FROM api_cache",
+            )
             cache_size_bytes = size_cursor.fetchone()[0] or 0
 
             # Database file size
-            db_size_bytes = self.db_path.stat().st_size if self.db_path.exists() else 0
+            db_size_bytes = (
+                self.db_path.stat().st_size if self.db_path.exists() else 0
+            )
 
         return {
             "total_entries": total_entries,
