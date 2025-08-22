@@ -44,3 +44,10 @@ class MalformedDateError(ValueError):
         super().__init__(
             f"Malformed date: {date}. Please use the format YYYY-MM-DD",
         )
+
+class PaginationError(Exception):
+    """Exception raised when pagination fails."""
+
+    def __init__(self, message: str) -> None:
+        """Initialize the exception string."""
+        super().__init__(f"Pagination error: {message}")

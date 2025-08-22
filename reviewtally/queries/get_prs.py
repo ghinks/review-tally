@@ -4,10 +4,12 @@ from typing import Any
 
 import requests
 
+from reviewtally.exceptions.local_exceptions import PaginationError
 from reviewtally.queries import GENERAL_TIMEOUT
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-
+MAX_NUM_PAGES = 100
+ITEMS_PER_PAGE = 100
 
 def get_pull_requests_between_dates(
     owner: str,
@@ -24,7 +26,7 @@ def get_pull_requests_between_dates(
         "state": "all",
         "sort": "created_at",
         "direction": "desc",
-        "per_page": 30,
+        "per_page": ITEMS_PER_PAGE,
     }
     pull_requests = []
     page = 1
@@ -51,5 +53,7 @@ def get_pull_requests_between_dates(
         page += 1
         if created_at < start_date:
             break
+        if page > MAX_NUM_PAGES:
+            raise PaginationError(str(page))
 
     return pull_requests
