@@ -6,6 +6,7 @@ from typing import Any
 
 import aiohttp
 
+from reviewtally.cache.cache_manager import get_cache_manager
 from reviewtally.queries import (
     AIOHTTP_TIMEOUT,
     BACKOFF_MULTIPLIER,
@@ -180,6 +181,20 @@ def get_reviewers_with_comments_for_pull_requests(
     repo: str,
     pull_numbers: list[int],
 ) -> list[dict]:
+    # Check cache first
+    cache_manager = get_cache_manager()
+    cached_result = cache_manager.get_pr_reviews_cache(
+        owner, repo, pull_numbers,
+    )
+    if cached_result is not None:
+        return cached_result
+
+    # Cache miss - fetch from API
+    print(  # noqa: T201
+        f"Cache MISS: Fetching PR reviews for {owner}/{repo} "
+        f"({len(pull_numbers)} PRs)",
+    )
+
     # First, get all reviews for the pull requests
     review_urls = [
         f"https://api.github.com/repos/{owner}/{repo}"
@@ -243,6 +258,13 @@ def get_reviewers_with_comments_for_pull_requests(
                 },
             )
 
+        # Cache the results (assume closed PRs for now - enhance later)
+        cache_manager.set_pr_reviews_cache(
+            owner, repo, pull_numbers, reviewer_data,
+        )
+
         return reviewer_data
 
+    # Cache empty result as well
+    cache_manager.set_pr_reviews_cache(owner, repo, pull_numbers, [])
     return []
