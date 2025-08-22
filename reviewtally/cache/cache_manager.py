@@ -198,7 +198,7 @@ _cache_manager: CacheManager | None = None
 
 def get_cache_manager() -> CacheManager:
     """Get the global cache manager instance."""
-    global _cache_manager
+    global _cache_manager  # noqa: PLW0603
     if _cache_manager is None:
         _cache_manager = CacheManager()
     return _cache_manager
@@ -206,6 +206,6 @@ def get_cache_manager() -> CacheManager:
 
 def clear_cache_manager() -> None:
     """Clear the global cache manager instance (for testing)."""
-    global _cache_manager
+    global _cache_manager  # noqa: PLW0603
     _cache_manager = None
 
