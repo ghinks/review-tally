@@ -6,6 +6,26 @@ import hashlib
 from typing import Any
 
 
+def generate_single_pr_reviews_cache_key(
+    owner: str,
+    repo: str,
+    pull_number: int,
+) -> str:
+    """
+    Generate cache key for a single PR's reviews data.
+
+    Args:
+        owner: Repository owner/organization
+        repo: Repository name
+        pull_number: Single PR number
+
+    Returns:
+        Cache key string
+
+    """
+    return f"pr_reviews:{owner}:{repo}:{pull_number}"
+
+
 def generate_pr_reviews_cache_key(
     owner: str,
     repo: str,

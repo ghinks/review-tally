@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from reviewtally.cache.cache_keys import (
     generate_pr_reviews_cache_key,
+    generate_single_pr_reviews_cache_key,
 )
 from reviewtally.cache.sqlite_cache import SQLiteCache
 
@@ -78,6 +79,88 @@ class CacheManager:
             return cached_data.get("reviews", [])
 
         return None
+
+    def get_single_pr_reviews_cache(
+        self,
+        owner: str,
+        repo: str,
+        pull_number: int,
+    ) -> list[dict[str, Any]] | None:
+        """
+        Get cached reviews data for a single PR.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            pull_number: PR number
+
+        Returns:
+            Cached review data or None if not found
+
+        """
+        if not self.enabled or not self.cache:
+            return None
+
+        cache_key = generate_single_pr_reviews_cache_key(owner, repo, pull_number)
+        cached_data = self.cache.get(cache_key)
+
+        if cached_data:
+            print(  # noqa: T201
+                f"Cache HIT: PR reviews for {owner}/{repo} PR #{pull_number}",
+            )
+            return cached_data.get("reviews", [])
+
+        return None
+
+    def set_single_pr_reviews_cache(
+        self,
+        owner: str,
+        repo: str,
+        pull_number: int,
+        reviews_data: list[dict[str, Any]],
+        pr_state: str | None = None,
+    ) -> None:
+        """
+        Cache reviews data for a single PR.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            pull_number: PR number
+            reviews_data: Review data to cache
+            pr_state: PR state for TTL determination
+
+        """
+        if not self.enabled or not self.cache:
+            return
+
+        cache_key = generate_single_pr_reviews_cache_key(owner, repo, pull_number)
+
+        # Determine TTL based on PR state
+        ttl_hours = None  # Never expire by default
+        if pr_state == "open":
+            ttl_hours = 1  # Short TTL for open PRs
+
+        metadata = {
+            "owner": owner,
+            "repo": repo,
+            "pull_number": pull_number,
+            "review_count": len(reviews_data),
+            "pr_state": pr_state,
+        }
+
+        self.cache.set(
+            cache_key,
+            {"reviews": reviews_data},
+            ttl_hours=ttl_hours,
+            metadata=metadata,
+        )
+
+        ttl_desc = "forever" if ttl_hours is None else f"{ttl_hours}h"
+        print(  # noqa: T201
+            f"Cache SET: PR reviews for {owner}/{repo} PR #{pull_number} "
+            f"(TTL: {ttl_desc})"
+        )
 
     def set_pr_reviews_cache(
         self,
