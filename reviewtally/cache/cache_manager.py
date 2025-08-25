@@ -101,7 +101,9 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = generate_single_pr_reviews_cache_key(owner, repo, pull_number)
+        cache_key = generate_single_pr_reviews_cache_key(
+            owner, repo, pull_number,
+        )
         cached_data = self.cache.get(cache_key)
 
         if cached_data:
@@ -134,7 +136,9 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return
 
-        cache_key = generate_single_pr_reviews_cache_key(owner, repo, pull_number)
+        cache_key = generate_single_pr_reviews_cache_key(
+            owner, repo, pull_number,
+        )
 
         # Determine TTL based on PR state
         ttl_hours = None  # Never expire by default
@@ -159,7 +163,7 @@ class CacheManager:
         ttl_desc = "forever" if ttl_hours is None else f"{ttl_hours}h"
         print(  # noqa: T201
             f"Cache SET: PR reviews for {owner}/{repo} PR #{pull_number} "
-            f"(TTL: {ttl_desc})"
+            f"(TTL: {ttl_desc})",
         )
 
     def set_pr_reviews_cache(

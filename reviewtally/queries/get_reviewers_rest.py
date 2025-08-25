@@ -6,7 +6,7 @@ from typing import Any
 
 import aiohttp
 
-from reviewtally.cache.cache_manager import get_cache_manager
+from reviewtally.cache.cache_manager import CacheManager, get_cache_manager
 from reviewtally.queries import (
     AIOHTTP_TIMEOUT,
     BACKOFF_MULTIPLIER,
@@ -29,7 +29,7 @@ if not HTTPS_PROXY:
     HTTPS_PROXY = os.getenv("https_proxy")
 
 # Rate limiting constants
-RATE_LIMIT_BUFFER = 10  # Keep this many requests in reserve
+RATE_LIMIT_BUFFER = 500  # Keep this many requests in reserve
 RATE_LIMIT_MIN_SLEEP = 60  # Minimum sleep time when rate limited (seconds)
 
 
@@ -176,36 +176,34 @@ def get_reviewers_for_pull_requests(
     return [item["user"] for sublist in reviewers for item in sublist]
 
 
-def get_reviewers_with_comments_for_pull_requests(
+def _check_pr_cache(
+    cache_manager: CacheManager,
     owner: str,
     repo: str,
     pull_numbers: list[int],
-) -> list[dict]:
-    cache_manager = get_cache_manager()
-    
-    # Check cache for each PR individually
+) -> tuple[list[dict], list[int]]:
+    """Check cache for each PR individually and return cached/uncached data."""
     cached_results = []
     uncached_prs = []
-    
+
     for pull_number in pull_numbers:
         cached_pr_data = cache_manager.get_single_pr_reviews_cache(
-            owner, repo, pull_number
+            owner, repo, pull_number,
         )
         if cached_pr_data is not None:
             cached_results.extend(cached_pr_data)
         else:
             uncached_prs.append(pull_number)
-    
-    # If all PRs are cached, return early
-    if not uncached_prs:
-        return cached_results
-    
-    print(  # noqa: T201
-        f"Cache MISS: Fetching {len(uncached_prs)} uncached PR reviews "
-        f"for {owner}/{repo} (total: {len(pull_numbers)} PRs)"
-    )
-    
-    # Fetch uncached PRs - still use batching for efficiency
+
+    return cached_results, uncached_prs
+
+
+def _fetch_review_metadata(
+    owner: str,
+    repo: str,
+    uncached_prs: list[int],
+) -> tuple[list[str], list[dict]]:
+    """Fetch reviews and collect comment URLs and metadata."""
     review_urls = [
         f"https://api.github.com/repos/{owner}/{repo}"
         f"/pulls/{pull_number}/reviews"
@@ -213,7 +211,6 @@ def get_reviewers_with_comments_for_pull_requests(
     ]
     reviews_response = asyncio.run(fetch_batch(review_urls))
 
-    # Collect all comment URLs for batch fetching
     comment_urls = []
     review_metadata = []
 
@@ -228,10 +225,9 @@ def get_reviewers_with_comments_for_pull_requests(
                 f"/pulls/{pull_number}/reviews/{review_id}/comments"
             )
             comment_urls.append(comment_url)
-            # Handle missing submitted_at key gracefully
+
             submitted_at = review.get("submitted_at")
             if submitted_at is None:
-                # Log diagnostic information when submitted_at is missing
                 print(  # noqa: T201
                     f"Warning: Review {review_id} for PR {pull_number} "
                     f"missing submitted_at",
@@ -246,41 +242,89 @@ def get_reviewers_with_comments_for_pull_requests(
                 },
             )
 
-    # Fetch all comments in batches
+    return comment_urls, review_metadata
+
+
+def _process_and_cache_reviews(
+    cache_manager: CacheManager,
+    owner: str,
+    repo: str,
+    comment_urls: list[str],
+    review_metadata: list[dict],
+) -> list[dict]:
+    """Process comments and cache individual PR reviews."""
+    if not comment_urls:
+        return []
+
+    comments_response = asyncio.run(fetch_batch(comment_urls))
+
+    # Combine the data and group by PR for individual caching
+    pr_review_data: dict[int, list[dict[str, Any]]] = {}
     uncached_results = []
-    if comment_urls:
-        comments_response = asyncio.run(fetch_batch(comment_urls))
 
-        # Combine the data and group by PR for individual caching
-        pr_review_data: dict[int, list[dict[str, Any]]] = {}
-        for i, comments in enumerate(comments_response):
-            metadata = review_metadata[i]
-            comment_count = len(comments) if comments else 0
-            pull_number = metadata["pull_number"]
+    for i, comments in enumerate(comments_response):
+        metadata = review_metadata[i]
+        comment_count = len(comments) if comments else 0
+        pull_number = metadata["pull_number"]
 
-            review_entry = {
-                "user": metadata["user"],
-                "review_id": metadata["review_id"],
-                "pull_number": pull_number,
-                "comment_count": comment_count,
-                "submitted_at": metadata["submitted_at"],
-            }
-            
-            if pull_number not in pr_review_data:
-                pr_review_data[pull_number] = []
-            pr_review_data[pull_number].append(review_entry)
-            uncached_results.append(review_entry)
+        review_entry = {
+            "user": metadata["user"],
+            "review_id": metadata["review_id"],
+            "pull_number": pull_number,
+            "comment_count": comment_count,
+            "submitted_at": metadata["submitted_at"],
+        }
 
-        # Cache each PR individually (assume closed for now)
-        for pull_number, reviews in pr_review_data.items():
-            cache_manager.set_single_pr_reviews_cache(
-                owner, repo, pull_number, reviews
-            )
-    else:
-        # Cache empty results for PRs with no reviews
+        if pull_number not in pr_review_data:
+            pr_review_data[pull_number] = []
+        pr_review_data[pull_number].append(review_entry)
+        uncached_results.append(review_entry)
+
+    # Cache each PR individually (assume closed for now)
+    for pull_number, reviews in pr_review_data.items():
+        cache_manager.set_single_pr_reviews_cache(
+            owner, repo, pull_number, reviews,
+        )
+
+    return uncached_results
+
+
+def get_reviewers_with_comments_for_pull_requests(
+    owner: str,
+    repo: str,
+    pull_numbers: list[int],
+) -> list[dict]:
+    cache_manager = get_cache_manager()
+
+    # Check cache for each PR individually
+    cached_results, uncached_prs = _check_pr_cache(
+        cache_manager, owner, repo, pull_numbers,
+    )
+
+    # If all PRs are cached, return early
+    if not uncached_prs:
+        return cached_results
+
+    print(  # noqa: T201
+        f"Cache MISS: Fetching {len(uncached_prs)} uncached PR reviews "
+        f"for {owner}/{repo} (total: {len(pull_numbers)} PRs)",
+    )
+
+    # Fetch reviews and collect metadata
+    comment_urls, review_metadata = _fetch_review_metadata(
+        owner, repo, uncached_prs,
+    )
+
+    # Process comments and cache results
+    uncached_results = _process_and_cache_reviews(
+        cache_manager, owner, repo, comment_urls, review_metadata,
+    )
+
+    # Cache empty results for PRs with no reviews
+    if not comment_urls:
         for pull_number in uncached_prs:
             cache_manager.set_single_pr_reviews_cache(
-                owner, repo, pull_number, []
+                owner, repo, pull_number, [],
             )
 
     # Combine cached and newly fetched results
