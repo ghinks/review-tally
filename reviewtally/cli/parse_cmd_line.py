@@ -125,7 +125,8 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
             "Supported: total_reviews,total_comments,unique_reviewers,"
             "avg_comments_per_review,reviews_per_reviewer,"
             "avg_response_time_hours,avg_completion_time_hours,"
-            "active_review_days"
+            "active_review_days,avg_additions_per_reviewer,"
+            "avg_deletions_per_reviewer,avg_changed_files_per_reviewer"
         ),
     )
     parser.add_argument(

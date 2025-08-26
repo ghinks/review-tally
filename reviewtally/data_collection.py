@@ -10,7 +10,10 @@ if TYPE_CHECKING:
 
 from reviewtally.analysis.sprint_periods import get_sprint_for_date
 from reviewtally.exceptions.local_exceptions import LoginNotFoundError
-from reviewtally.queries.get_prs import get_pull_requests_between_dates
+from reviewtally.queries.get_prs import (
+    get_pull_request_file_changes,
+    get_pull_requests_between_dates,
+)
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
 )
@@ -140,6 +143,10 @@ def collect_review_data(context: ReviewDataContext) -> None:
                         "unique_reviewers": set(),
                         "review_times": [],
                         "pr_created_times": [],
+                        "total_additions": 0,
+                        "total_deletions": 0,
+                        "total_changed_files": 0,
+                        "reviewed_prs": set(),
                     }
 
                 context.sprint_stats[sprint_label]["total_reviews"] += 1
@@ -155,6 +162,29 @@ def collect_review_data(context: ReviewDataContext) -> None:
                 context.sprint_stats[sprint_label]["pr_created_times"].append(
                     pr_lookup[pr_number]["created_at"],
                 )
+
+                # Collect PR file changes data only once per PR per sprint
+                if (
+                    pr_number not in
+                    context.sprint_stats[sprint_label]["reviewed_prs"]
+                ):
+                    context.sprint_stats[sprint_label]["reviewed_prs"].add(
+                        pr_number,
+                    )
+                    file_changes = get_pull_request_file_changes(
+                        context.org_name,
+                        context.repo,
+                        pr_number,
+                    )
+                    context.sprint_stats[sprint_label]["total_additions"] += (
+                        file_changes["additions"]
+                    )
+                    context.sprint_stats[sprint_label]["total_deletions"] += (
+                        file_changes["deletions"]
+                    )
+                    context.sprint_stats[sprint_label][
+                        "total_changed_files"
+                    ] += file_changes["changed_files"]
             elif (
                 context.sprint_stats is not None
                 and review_submitted_at is None

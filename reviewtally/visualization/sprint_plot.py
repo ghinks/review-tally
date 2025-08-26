@@ -18,6 +18,9 @@ SUPPORTED_METRICS = {
     "avg_response_time_hours": "Avg Response (hrs)",
     "avg_completion_time_hours": "Review Span (hrs)",
     "active_review_days": "Active Review Days",
+    "avg_additions_per_reviewer": "Avg Additions/Reviewer",
+    "avg_deletions_per_reviewer": "Avg Deletions/Reviewer",
+    "avg_changed_files_per_reviewer": "Avg Changed Files/Reviewer",
 }
 
 

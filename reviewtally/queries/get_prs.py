@@ -90,3 +90,46 @@ def get_pull_requests_between_dates(
             raise PaginationError(str(page))
 
     return pull_requests
+
+
+def get_pull_request_file_changes(
+    owner: str,
+    repo: str,
+    pull_number: int,
+) -> dict[str, int]:
+    """Get file changes for a PR (additions, deletions, changed files)."""
+    url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/files"
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=GENERAL_TIMEOUT)
+        backoff_if_ratelimited(response.headers)
+        response.raise_for_status()
+        files = response.json()
+
+        total_additions = 0
+        total_deletions = 0
+        changed_files = len(files)
+
+        for file in files:
+            total_additions += file.get("additions", 0)
+            total_deletions += file.get("deletions", 0)
+
+    except requests.RequestException:
+        # Return zeros if API call fails to avoid breaking the flow
+        pass
+    else:
+        return {
+            "additions": total_additions,
+            "deletions": total_deletions,
+            "changed_files": changed_files,
+        }
+
+    return {
+        "additions": 0,
+        "deletions": 0,
+        "changed_files": 0,
+    }

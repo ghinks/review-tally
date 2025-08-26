@@ -92,6 +92,21 @@ def calculate_sprint_team_metrics(
             "total_reviews": data["total_reviews"],
             "total_comments": data["total_comments"],
             "unique_reviewers": unique_reviewer_count,
+            "avg_additions_per_reviewer": (
+                data.get("total_additions", 0) / unique_reviewer_count
+                if unique_reviewer_count > 0
+                else 0
+            ),
+            "avg_deletions_per_reviewer": (
+                data.get("total_deletions", 0) / unique_reviewer_count
+                if unique_reviewer_count > 0
+                else 0
+            ),
+            "avg_changed_files_per_reviewer": (
+                data.get("total_changed_files", 0) / unique_reviewer_count
+                if unique_reviewer_count > 0
+                else 0
+            ),
             "avg_comments_per_review": (
                 data["total_comments"] / data["total_reviews"]
                 if data["total_reviews"] > 0

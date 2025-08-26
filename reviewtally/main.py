@@ -126,6 +126,18 @@ def _print_sprint_summary(team_metrics: dict[str, dict[str, Any]]) -> None:
             f"{sprint_metrics['unique_reviewers']}",
         )
         print(  # noqa: T201
+            "  Avg Additions/Reviewer: "
+            f"{sprint_metrics['avg_additions_per_reviewer']:.1f}",
+        )
+        print(  # noqa: T201
+            "  Avg Deletions/Reviewer: "
+            f"{sprint_metrics['avg_deletions_per_reviewer']:.1f}",
+        )
+        print(  # noqa: T201
+            "  Avg Changed Files/Reviewer: "
+            f"{sprint_metrics['avg_changed_files_per_reviewer']:.1f}",
+        )
+        print(  # noqa: T201
             "  Avg Comments/Review: "
             f"{sprint_metrics['avg_comments_per_review']:.1f}",
         )
