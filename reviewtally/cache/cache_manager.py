@@ -132,64 +132,6 @@ class CacheManager:
             f"(TTL: {ttl_desc})",
         )
 
-    def cleanup_expired(self) -> int:
-        """
-        Clean up expired cache entries.
-
-        Returns:
-            Number of entries cleaned up
-
-        """
-        if not self.enabled or not self.cache:
-            return 0
-
-        return self.cache.cleanup_expired()
-
-    def clear_all(self) -> int:
-        """
-        Clear all cache entries.
-
-        Returns:
-            Number of entries cleared
-
-        """
-        if not self.enabled or not self.cache:
-            return 0
-
-        return self.cache.clear_all()
-
-    def get_stats(self) -> dict[str, Any]:
-        """
-        Get cache statistics.
-
-        Returns:
-            Cache statistics dictionary
-
-        """
-        if not self.enabled or not self.cache:
-            return {"enabled": False, "message": "Cache is disabled"}
-
-        stats = self.cache.get_stats()
-        stats["enabled"] = True
-        return stats
-
-    def list_keys(self, pattern: str | None = None) -> list[str]:
-        """
-        List cache keys.
-
-        Args:
-            pattern: Optional pattern to filter keys
-
-        Returns:
-            List of cache keys
-
-        """
-        if not self.enabled or not self.cache:
-            return []
-
-        return self.cache.list_keys(pattern)
-
-
 # Global cache manager instance
 _cache_manager: CacheManager | None = None
 
@@ -200,10 +142,3 @@ def get_cache_manager() -> CacheManager:
     if _cache_manager is None:
         _cache_manager = CacheManager()
     return _cache_manager
-
-
-def clear_cache_manager() -> None:
-    """Clear the global cache manager instance (for testing)."""
-    global _cache_manager  # noqa: PLW0603
-    _cache_manager = None
-
