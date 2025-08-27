@@ -27,6 +27,7 @@ class CommandLineArgs(TypedDict):
     chart_type: str
     chart_metrics: list[str]
     save_plot: str | None
+    use_cache: bool
 
 
 def print_toml_version() -> None:
@@ -133,6 +134,13 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         help="Optional path to save the interactive HTML chart",
     )
 
+    # caching options
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Disable PR review caching (always fetch fresh data from API)",
+    )
+
     args = parser.parse_args()
     # catch ValueError if the date format is not correct
     try:
@@ -189,4 +197,5 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         chart_type=args.chart_type,
         chart_metrics=chart_metrics,
         save_plot=args.save_plot,
+        use_cache=not args.no_cache,
     )

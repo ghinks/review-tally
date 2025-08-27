@@ -70,3 +70,4 @@ review-tally -o expressjs -l javascript --sprint-analysis --output-path sprint_a
 * -v, --version Show the version of the tool
 * --sprint-analysis selects the sprint analysis option
 * --output-path specifices the output file for sprint analysis
+* --no-cache Disable PR review caching (always fetch fresh data from API). By default, caching is enabled for better performance.

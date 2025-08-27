@@ -37,6 +37,7 @@ class ReviewDataContext:
     reviewer_stats: dict[str, dict[str, Any]]
     sprint_stats: dict[str, dict[str, Any]] | None = None
     sprint_periods: list[tuple[datetime, datetime, str]] | None = None
+    use_cache: bool = True
 
 
 @dataclass
@@ -50,6 +51,7 @@ class ProcessRepositoriesContext:
     start_time: float
     sprint_stats: dict[str, dict[str, Any]] | None = None
     sprint_periods: list[tuple[datetime, datetime, str]] | None = None
+    use_cache: bool = True
 
 
 @dataclass
@@ -79,6 +81,7 @@ def collect_review_data(context: ReviewDataContext) -> None:
             context.org_name,
             context.repo,
             pr_numbers_batch,
+            use_cache=context.use_cache,
         )
         for review in reviewer_data:
             user = review["user"]
@@ -195,6 +198,7 @@ def process_repositories(
             reviewer_stats=reviewer_stats,
             sprint_stats=context.sprint_stats,
             sprint_periods=context.sprint_periods,
+            use_cache=context.use_cache,
         )
         collect_review_data(review_context)
         timestamped_print(
