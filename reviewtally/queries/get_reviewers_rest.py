@@ -187,7 +187,7 @@ def _check_pr_cache(
     uncached_prs = []
 
     for pull_number in pull_numbers:
-        cached_pr_data = cache_manager.get_single_pr_reviews_cache(
+        cached_pr_data = cache_manager.get_cached_pr_review(
             owner, repo, pull_number,
         )
         if cached_pr_data is not None:
@@ -282,7 +282,7 @@ def _process_and_cache_reviews(
 
     # Cache each PR individually (assume closed for now)
     for pull_number, reviews in pr_review_data.items():
-        cache_manager.set_single_pr_reviews_cache(
+        cache_manager.cache_per_review(
             owner, repo, pull_number, reviews,
         )
 
@@ -323,7 +323,7 @@ def get_reviewers_with_comments_for_pull_requests(
     # Cache empty results for PRs with no reviews
     if not comment_urls:
         for pull_number in uncached_prs:
-            cache_manager.set_single_pr_reviews_cache(
+            cache_manager.cache_per_review(
                 owner, repo, pull_number, [],
             )
 
