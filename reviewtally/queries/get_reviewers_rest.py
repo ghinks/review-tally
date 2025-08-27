@@ -202,8 +202,8 @@ def _fetch_review_metadata(
     owner: str,
     repo: str,
     uncached_prs: list[int],
-) -> tuple[list[str], list[dict]]:
-    """Fetch reviews and collect comment URLs and metadata."""
+) -> list[dict]:
+    """Fetch reviews and collect metadata with comment URLs."""
     review_urls = [
         f"https://api.github.com/repos/{owner}/{repo}"
         f"/pulls/{pull_number}/reviews"
@@ -211,8 +211,7 @@ def _fetch_review_metadata(
     ]
     reviews_response = asyncio.run(fetch_batch(review_urls))
 
-    comment_urls = []
-    review_metadata = []
+    review_data = []
 
     for i, sublist in enumerate(reviews_response):
         pull_number = uncached_prs[i]
@@ -224,7 +223,6 @@ def _fetch_review_metadata(
                 f"https://api.github.com/repos/{owner}/{repo}"
                 f"/pulls/{pull_number}/reviews/{review_id}/comments"
             )
-            comment_urls.append(comment_url)
 
             submitted_at = review.get("submitted_at")
             if submitted_at is None:
@@ -233,29 +231,31 @@ def _fetch_review_metadata(
                     f"missing submitted_at",
                 )
 
-            review_metadata.append(
+            review_data.append(
                 {
                     "user": user,
                     "review_id": review_id,
                     "pull_number": pull_number,
                     "submitted_at": submitted_at,
+                    "comment_url": comment_url,
                 },
             )
 
-    return comment_urls, review_metadata
+    return review_data
 
 
 def _process_and_cache_reviews(
     cache_manager: CacheManager,
     owner: str,
     repo: str,
-    comment_urls: list[str],
-    review_metadata: list[dict],
+    review_data: list[dict],
 ) -> list[dict]:
     """Process comments and cache individual PR reviews."""
-    if not comment_urls:
+    if not review_data:
         return []
 
+    # Extract comment URLs from review data
+    comment_urls = [review["comment_url"] for review in review_data]
     comments_response = asyncio.run(fetch_batch(comment_urls))
 
     # Combine the data and group by PR for individual caching
@@ -263,16 +263,16 @@ def _process_and_cache_reviews(
     uncached_results = []
 
     for i, comments in enumerate(comments_response):
-        metadata = review_metadata[i]
+        review_info = review_data[i]
         comment_count = len(comments) if comments else 0
-        pull_number = metadata["pull_number"]
+        pull_number = review_info["pull_number"]
 
         review_entry = {
-            "user": metadata["user"],
-            "review_id": metadata["review_id"],
+            "user": review_info["user"],
+            "review_id": review_info["review_id"],
             "pull_number": pull_number,
             "comment_count": comment_count,
-            "submitted_at": metadata["submitted_at"],
+            "submitted_at": review_info["submitted_at"],
         }
 
         if pull_number not in pr_review_data:
@@ -311,17 +311,17 @@ def get_reviewers_with_comments_for_pull_requests(
     )
 
     # Fetch reviews and collect metadata
-    comment_urls, review_metadata = _fetch_review_metadata(
+    review_data = _fetch_review_metadata(
         owner, repo, uncached_prs,
     )
 
     # Process comments and cache results
     uncached_results = _process_and_cache_reviews(
-        cache_manager, owner, repo, comment_urls, review_metadata,
+        cache_manager, owner, repo, review_data,
     )
 
     # Cache empty results for PRs with no reviews
-    if not comment_urls:
+    if not review_data:
         for pull_number in uncached_prs:
             cache_manager.cache_per_review(
                 owner, repo, pull_number, [],
