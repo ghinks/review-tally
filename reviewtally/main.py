@@ -66,6 +66,7 @@ def _handle_sprint_analysis(
         start_time=start_time,
         sprint_stats=sprint_stats,
         sprint_periods=sprint_periods,
+        use_cache=args["use_cache"],
     )
     process_repositories(process_context)
 
@@ -102,6 +103,7 @@ def _handle_individual_analysis(
         start_date=args["start_date"],
         end_date=args["end_date"],
         start_time=start_time,
+        use_cache=args["use_cache"],
     )
     reviewer_stats = process_repositories(process_context)
     calculate_reviewer_metrics(reviewer_stats)

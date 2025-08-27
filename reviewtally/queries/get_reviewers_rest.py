@@ -249,6 +249,8 @@ def _process_and_cache_reviews(
     owner: str,
     repo: str,
     review_data: list[dict],
+    *,
+    use_cache: bool = True,
 ) -> list[dict]:
     """Process comments and cache individual PR reviews."""
     if not review_data:
@@ -280,11 +282,12 @@ def _process_and_cache_reviews(
         pr_review_data[pull_number].append(review_entry)
         uncached_results.append(review_entry)
 
-    # Cache each PR individually (assume closed for now)
-    for pull_number, reviews in pr_review_data.items():
-        cache_manager.cache_per_review(
-            owner, repo, pull_number, reviews,
-        )
+    # Cache each PR individually (only if caching enabled)
+    if use_cache:
+        for pull_number, reviews in pr_review_data.items():
+            cache_manager.cache_per_review(
+                owner, repo, pull_number, reviews,
+            )
 
     return uncached_results
 
@@ -293,20 +296,28 @@ def get_reviewers_with_comments_for_pull_requests(
     owner: str,
     repo: str,
     pull_numbers: list[int],
+    *,
+    use_cache: bool = True,
 ) -> list[dict]:
     cache_manager = get_cache_manager()
 
-    # Check cache for each PR individually
-    cached_results, uncached_prs = _check_pr_cache(
-        cache_manager, owner, repo, pull_numbers,
-    )
+    if use_cache:
+        # Check cache for each PR individually
+        cached_results, uncached_prs = _check_pr_cache(
+            cache_manager, owner, repo, pull_numbers,
+        )
 
-    # If all PRs are cached, return early
-    if not uncached_prs:
-        return cached_results
+        # If all PRs are cached, return early
+        if not uncached_prs:
+            return cached_results
+    else:
+        # Skip cache entirely - treat all PRs as uncached
+        cached_results = []
+        uncached_prs = pull_numbers
 
+    cache_status = "DISABLED" if not use_cache else "MISS"
     print(  # noqa: T201
-        f"Cache MISS: Fetching {len(uncached_prs)} uncached PR reviews "
+        f"Cache {cache_status}: Fetching {len(uncached_prs)} PR reviews "
         f"for {owner}/{repo} (total: {len(pull_numbers)} PRs)",
     )
 
@@ -317,11 +328,11 @@ def get_reviewers_with_comments_for_pull_requests(
 
     # Process comments and cache results
     uncached_results = _process_and_cache_reviews(
-        cache_manager, owner, repo, review_data,
+        cache_manager, owner, repo, review_data, use_cache=use_cache,
     )
 
-    # Cache empty results for PRs with no reviews
-    if not review_data:
+    # Cache empty results for PRs with no reviews (only if caching enabled)
+    if not review_data and use_cache:
         for pull_number in uncached_prs:
             cache_manager.cache_per_review(
                 owner, repo, pull_number, [],
