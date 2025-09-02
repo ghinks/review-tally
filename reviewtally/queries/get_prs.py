@@ -6,6 +6,7 @@ from typing import Any
 
 import requests
 
+from reviewtally.cache.cache_manager import get_cache_manager
 from reviewtally.exceptions.local_exceptions import PaginationError
 from reviewtally.queries import GENERAL_TIMEOUT
 
@@ -16,11 +17,6 @@ RATE_LIMIT_REMAINING_THRESHOLD = 10  # arbitrary threshold
 RATE_LIMIT_SLEEP_SECONDS = 60  # seconds to sleep if rate limit is hit
 
 def backoff_if_ratelimited(headers: Mapping[str, str]) -> None:
-    """
-    Sleep until GitHub's rate limit reset if `X-RateLimit-Remaining` is 0.
-
-    Uses only `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
-    """
     remaining = headers.get("X-RateLimit-Remaining")
     if remaining is None:
         return
@@ -48,7 +44,27 @@ def get_pull_requests_between_dates(
     repo: str,
     start_date: datetime,
     end_date: datetime,
+    *,
+    use_cache: bool = True,
 ) -> list[dict]:
+    cache_manager = get_cache_manager()
+
+    if use_cache:
+        # Check cache first
+        cached_result = cache_manager.get_cached_pr_list(
+            owner, repo, start_date, end_date,
+        )
+        if cached_result is not None:
+            return cached_result
+
+    cache_status = "DISABLED" if not use_cache else "MISS"
+    print(  # noqa: T201
+        f"Cache {cache_status}: Fetching PR list for {owner}/{repo} "
+        f"({start_date.strftime('%Y-%m-%d')} to "
+        f"{end_date.strftime('%Y-%m-%d')})",
+    )
+
+    # Fetch PR list from GitHub API
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -88,5 +104,11 @@ def get_pull_requests_between_dates(
             break
         if page > MAX_NUM_PAGES:
             raise PaginationError(str(page))
+
+    # Cache the results if caching is enabled
+    if use_cache:
+        cache_manager.cache_pr_list(
+            owner, repo, start_date, end_date, pull_requests,
+        )
 
     return pull_requests
