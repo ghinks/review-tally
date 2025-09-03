@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from reviewtally.cache.cache_keys import (
-    generate_pr_list_cache_key,
+    generate_pr_metadata_cache_key,
     generate_single_pr_reviews_cache_key,
 )
 from reviewtally.cache.sqlite_cache import SQLiteCache
@@ -134,92 +134,89 @@ class CacheManager:
             f"(TTL: {ttl_desc})",
         )
 
-    def _calculate_pr_list_ttl(self, end_date: datetime) -> int | None:
-        # TTL constants
+    def _calculate_pr_ttl(self, pr_created_at: str) -> int | None:
         recent_threshold_days = 7
         moderate_threshold_days = 30
 
-        now = datetime.now(end_date.tzinfo or None)
-        days_ago = (now - end_date).days
+        created_date = datetime.fromisoformat(
+            pr_created_at.replace("Z", "+00:00"),
+        )
+        now = datetime.now(created_date.tzinfo)
+        days_ago = (now - created_date).days
 
         if days_ago < recent_threshold_days:
-            return 1  # 1 hour for very recent data
+            return 1  # 1 hour for very recent PRs
         if days_ago < moderate_threshold_days:
-            return 6  # 6 hours for recent data
-        return None  # Permanent cache for data older than 30 days
+            return 6  # 6 hours for recent PRs
+        return None  # Permanent cache for PRs older than 30 days
 
-    def get_cached_pr_list(
+    def get_cached_pr_metadata(
         self,
         owner: str,
         repo: str,
-        start_date: datetime,
-        end_date: datetime,
-    ) -> list[dict[str, Any]] | None:
+        pr_number: int,
+    ) -> dict[str, Any] | None:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = generate_pr_list_cache_key(
-            owner,
-            repo,
-            start_date.strftime("%Y-%m-%d"),
-            end_date.strftime("%Y-%m-%d"),
-        )
-        cached_data = self.cache.get(cache_key)
+        cache_key = generate_pr_metadata_cache_key(owner, repo, pr_number)
+        return self.cache.get(cache_key)
 
-        if cached_data:
-            pr_count = len(cached_data.get("pr_list", []))
-            print(  # noqa: T201
-                f"Cache HIT: PR list for {owner}/{repo} "
-                f"({start_date.strftime('%Y-%m-%d')} to "
-                f"{end_date.strftime('%Y-%m-%d')}) - {pr_count} PRs",
-            )
-            return cached_data.get("pr_list", [])
-
-        return None
-
-    def cache_pr_list(
+    def cache_pr_metadata(
         self,
         owner: str,
         repo: str,
-        start_date: datetime,
-        end_date: datetime,
-        pr_list: list[dict[str, Any]],
+        pr_data: dict[str, Any],
     ) -> None:
         if not self.enabled or not self.cache:
             return
 
-        cache_key = generate_pr_list_cache_key(
-            owner,
-            repo,
-            start_date.strftime("%Y-%m-%d"),
-            end_date.strftime("%Y-%m-%d"),
-        )
+        pr_number = pr_data["number"]
+        cache_key = generate_pr_metadata_cache_key(owner, repo, pr_number)
 
-        # Calculate smart TTL based on date range recency
-        ttl_hours = self._calculate_pr_list_ttl(end_date)
+        # Calculate TTL based on PR creation date
+        ttl_hours = self._calculate_pr_ttl(pr_data["created_at"])
 
         metadata = {
             "owner": owner,
             "repo": repo,
-            "start_date": start_date.strftime("%Y-%m-%d"),
-            "end_date": end_date.strftime("%Y-%m-%d"),
-            "pr_count": len(pr_list),
+            "pr_number": pr_number,
+            "pr_state": pr_data.get("state"),
+            "created_at": pr_data["created_at"],
         }
 
         self.cache.set(
             cache_key,
-            {"pr_list": pr_list},
+            pr_data,
             ttl_hours=ttl_hours,
             metadata=metadata,
         )
 
-        ttl_desc = "forever" if ttl_hours is None else f"{ttl_hours}h"
-        print(  # noqa: T201
-            f"Cache SET: PR list for {owner}/{repo} "
-            f"({start_date.strftime('%Y-%m-%d')} to "
-            f"{end_date.strftime('%Y-%m-%d')}) - {len(pr_list)} PRs "
-            f"(TTL: {ttl_desc})",
-        )
+    def get_cached_prs_for_date_range(
+        self,
+        owner: str,
+        repo: str,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> list[dict[str, Any]]:
+        if not self.enabled or not self.cache:
+            return []
+
+        # Get all cached PR keys for this repo
+        pattern = f"pr_metadata:{owner}:{repo}:%"
+        cached_keys = self.cache.list_keys(pattern)
+
+        cached_prs = []
+        for key in cached_keys:
+            cached_data = self.cache.get(key)
+            if cached_data:
+                created_at = datetime.fromisoformat(
+                    cached_data["created_at"].replace("Z", "+00:00"),
+                )
+                if start_date <= created_at <= end_date:
+                    cached_prs.append(cached_data)
+
+        return cached_prs
 
 # Global cache manager instance
 _cache_manager: CacheManager | None = None

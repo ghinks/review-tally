@@ -48,16 +48,21 @@ def get_pull_requests_between_dates(
     use_cache: bool = True,
 ) -> list[dict]:
     cache_manager = get_cache_manager()
+    cached_prs = []
 
     if use_cache:
-        # Check cache first
-        cached_result = cache_manager.get_cached_pr_list(
+        # Get cached PRs for the date range
+        cached_prs = cache_manager.get_cached_prs_for_date_range(
             owner, repo, start_date, end_date,
         )
-        if cached_result is not None:
-            return cached_result
+        if cached_prs:
+            print(  # noqa: T201
+                f"Cache PARTIAL HIT: Found {len(cached_prs)} cached PRs for "
+                f"{owner}/{repo} ({start_date.strftime('%Y-%m-%d')} to "
+                f"{end_date.strftime('%Y-%m-%d')})",
+            )
 
-    cache_status = "DISABLED" if not use_cache else "MISS"
+    cache_status = "DISABLED" if not use_cache else "FETCHING"
     print(  # noqa: T201
         f"Cache {cache_status}: Fetching PR list for {owner}/{repo} "
         f"({start_date.strftime('%Y-%m-%d')} to "
@@ -105,10 +110,25 @@ def get_pull_requests_between_dates(
         if page > MAX_NUM_PAGES:
             raise PaginationError(str(page))
 
-    # Cache the results if caching is enabled
+    # Cache individual PRs if caching is enabled
     if use_cache:
-        cache_manager.cache_pr_list(
-            owner, repo, start_date, end_date, pull_requests,
-        )
+        for pr in pull_requests:
+            cache_manager.cache_pr_metadata(owner, repo, pr)
 
-    return pull_requests
+    # Combine cached PRs with newly fetched PRs, removing duplicates
+    seen_pr_numbers = set()
+    unique_prs = []
+
+    # First add newly fetched PRs (to maintain original processing order)
+    for pr in pull_requests:
+        if pr["number"] not in seen_pr_numbers:
+            unique_prs.append(pr)
+            seen_pr_numbers.add(pr["number"])
+
+    # Then add cached PRs that weren't already fetched
+    for pr in cached_prs:
+        if pr["number"] not in seen_pr_numbers:
+            unique_prs.append(pr)
+            seen_pr_numbers.add(pr["number"])
+
+    return unique_prs
