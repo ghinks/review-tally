@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from reviewtally.cache import MODERATE_THRESHOLD_DAYS, RECENT_THRESHOLD_DAYS
 from reviewtally.cache.cache_keys import (
     generate_pr_metadata_cache_key,
     generate_single_pr_reviews_cache_key,
@@ -135,18 +136,15 @@ class CacheManager:
         )
 
     def _calculate_pr_ttl(self, pr_created_at: str) -> int | None:
-        recent_threshold_days = 7
-        moderate_threshold_days = 30
-
         created_date = datetime.fromisoformat(
             pr_created_at.replace("Z", "+00:00"),
         )
         now = datetime.now(created_date.tzinfo)
         days_ago = (now - created_date).days
 
-        if days_ago < recent_threshold_days:
+        if days_ago < RECENT_THRESHOLD_DAYS:
             return 1  # 1 hour for very recent PRs
-        if days_ago < moderate_threshold_days:
+        if days_ago < MODERATE_THRESHOLD_DAYS:
             return 6  # 6 hours for recent PRs
         return None  # Permanent cache for PRs older than 30 days
 
