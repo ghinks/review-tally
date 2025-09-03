@@ -38,38 +38,12 @@ def backoff_if_ratelimited(headers: Mapping[str, str]) -> None:
 
     if sleep_for > 0:
         time.sleep(sleep_for)
-
-def get_pull_requests_between_dates(
+def fetch_pull_requests_from_github(
     owner: str,
     repo: str,
     start_date: datetime,
     end_date: datetime,
-    *,
-    use_cache: bool = True,
 ) -> list[dict]:
-    cache_manager = get_cache_manager()
-    cached_prs = []
-
-    if use_cache:
-        # Get cached PRs for the date range
-        cached_prs = cache_manager.get_cached_prs_for_date_range(
-            owner, repo, start_date, end_date,
-        )
-        if cached_prs:
-            print(  # noqa: T201
-                f"Cache PARTIAL HIT: Found {len(cached_prs)} cached PRs for "
-                f"{owner}/{repo} ({start_date.strftime('%Y-%m-%d')} to "
-                f"{end_date.strftime('%Y-%m-%d')})",
-            )
-
-    cache_status = "DISABLED" if not use_cache else "FETCHING"
-    print(  # noqa: T201
-        f"Cache {cache_status}: Fetching PR list for {owner}/{repo} "
-        f"({start_date.strftime('%Y-%m-%d')} to "
-        f"{end_date.strftime('%Y-%m-%d')})",
-    )
-
-    # Fetch PR list from GitHub API
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -109,7 +83,43 @@ def get_pull_requests_between_dates(
             break
         if page > MAX_NUM_PAGES:
             raise PaginationError(str(page))
+    return pull_requests
 
+def get_pull_requests_between_dates(
+    owner: str,
+    repo: str,
+    start_date: datetime,
+    end_date: datetime,
+    *,
+    use_cache: bool = True,
+) -> list[dict]:
+    cache_manager = get_cache_manager()
+    cached_prs = []
+
+    if use_cache:
+        # Get cached PRs for the date range
+        cached_prs = cache_manager.get_cached_prs_for_date_range(
+            owner, repo, start_date, end_date,
+        )
+        if cached_prs:
+            print(  # noqa: T201
+                f"Cache PARTIAL HIT: Found {len(cached_prs)} cached PRs for "
+                f"{owner}/{repo} ({start_date.strftime('%Y-%m-%d')} to "
+                f"{end_date.strftime('%Y-%m-%d')})",
+            )
+
+    cache_status = "DISABLED" if not use_cache else "FETCHING"
+    print(  # noqa: T201
+        f"Cache {cache_status}: Fetching PR list for {owner}/{repo} "
+        f"({start_date.strftime('%Y-%m-%d')} to "
+        f"{end_date.strftime('%Y-%m-%d')})",
+    )
+
+    # Fetch PRs from GitHub API, extracted for simplicity
+    pull_requests = fetch_pull_requests_from_github(owner,
+                                                    repo,
+                                                    start_date,
+                                                    end_date)
     # Cache individual PRs if caching is enabled
     if use_cache:
         for pr in pull_requests:
