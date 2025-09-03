@@ -38,6 +38,7 @@ def backoff_if_ratelimited(headers: Mapping[str, str]) -> None:
 
     if sleep_for > 0:
         time.sleep(sleep_for)
+
 def fetch_pull_requests_from_github(
     owner: str,
     repo: str,
