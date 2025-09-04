@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import os
 import time
-from collections.abc import Mapping
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from reviewtally.cache.cache_manager import CacheManager
 
 from reviewtally.cache.cache_manager import get_cache_manager
 from reviewtally.exceptions.local_exceptions import PaginationError
@@ -44,7 +50,7 @@ def fetch_pull_requests_from_github(
     repo: str,
     start_date: datetime,
     end_date: datetime,
-) -> list[dict]:
+) -> tuple[list[dict], bool]:
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -58,6 +64,7 @@ def fetch_pull_requests_from_github(
     }
     pull_requests = []
     page = 1
+    reached_boundary = False
 
     while True:
         params = {**params, "page": page}
@@ -72,19 +79,23 @@ def fetch_pull_requests_from_github(
         prs = response.json()
         if not prs:
             break
+
+        latest_created_at = None
         for pr in prs:
             created_at = (
                 datetime.strptime(pr["created_at"], "%Y-%m-%dT%H:%M:%SZ")
             ).replace(tzinfo=timezone.utc)
             if start_date <= created_at <= end_date:
                 pull_requests.append(pr)
+            latest_created_at = created_at
 
         page += 1
-        if created_at < start_date:
+        if latest_created_at and latest_created_at < start_date:
+            reached_boundary = True
             break
         if page > MAX_NUM_PAGES:
             raise PaginationError(str(page))
-    return pull_requests
+    return pull_requests, reached_boundary
 
 def get_pull_requests_between_dates(
     owner: str,
@@ -95,51 +106,158 @@ def get_pull_requests_between_dates(
     use_cache: bool = True,
 ) -> list[dict]:
     cache_manager = get_cache_manager()
-    cached_prs = []
 
-    if use_cache:
-        # Get cached PRs for the date range
-        cached_prs = cache_manager.get_cached_prs_for_date_range(
+    if not use_cache:
+        print(  # noqa: T201
+            f"Cache DISABLED: Fetching PR list for {owner}/{repo} "
+            f"({start_date.strftime('%Y-%m-%d')} to "
+            f"{end_date.strftime('%Y-%m-%d')})",
+        )
+        prs, _ = fetch_pull_requests_from_github(
             owner, repo, start_date, end_date,
         )
-        if cached_prs:
-            print(  # noqa: T201
-                f"Cache PARTIAL HIT: Found {len(cached_prs)} cached PRs for "
-                f"{owner}/{repo} ({start_date.strftime('%Y-%m-%d')} to "
-                f"{end_date.strftime('%Y-%m-%d')})",
-            )
+        return prs
 
-    cache_status = "DISABLED" if not use_cache else "FETCHING"
-    print(  # noqa: T201
-        f"Cache {cache_status}: Fetching PR list for {owner}/{repo} "
-        f"({start_date.strftime('%Y-%m-%d')} to "
-        f"{end_date.strftime('%Y-%m-%d')})",
+    # Get cached PRs and PR index
+    cached_prs, pr_index = cache_manager.get_cached_prs_for_date_range(
+        owner, repo, start_date, end_date,
     )
 
-    # Fetch PRs from GitHub API, extracted for simplicity
-    pull_requests = fetch_pull_requests_from_github(owner,
-                                                    repo,
-                                                    start_date,
-                                                    end_date)
-    # Cache individual PRs if caching is enabled
-    if use_cache:
-        for pr in pull_requests:
-            cache_manager.cache_pr_metadata(owner, repo, pr)
+    if cached_prs:
+        print(  # noqa: T201
+            f"Cache PARTIAL HIT: Found {len(cached_prs)} cached PRs for "
+            f"{owner}/{repo} ({start_date.strftime('%Y-%m-%d')} to "
+            f"{end_date.strftime('%Y-%m-%d')})",
+        )
+    else:
+        print( f"Cache PARTIAL HIT: No cached PRs for {owner}/{repo} ") # noqa: T201
 
-    # Combine cached PRs with newly fetched PRs, removing duplicates
+    # Determine what additional data we need to fetch
+    needs_backward = cache_manager.needs_backward_fetch(pr_index, start_date)
+    needs_forward = cache_manager.needs_forward_fetch(pr_index)
+
+    newly_fetched_prs: list[dict] = []
+    reached_boundary = False
+
+    if needs_backward or needs_forward or not pr_index:
+        print(  # noqa: T201
+            f"Cache UPDATE: Fetching additional PRs for {owner}/{repo} "
+            f"(backward: {needs_backward}, forward: {needs_forward})",
+        )
+
+        # For now, do a full fetch - optimize later with incremental fetching
+        newly_fetched_prs, reached_boundary = fetch_pull_requests_from_github(
+            owner, repo, start_date, end_date,
+        )
+
+        # Update PR index and cache individual PRs
+        _update_pr_cache(
+            cache_manager, owner, repo, newly_fetched_prs, pr_index,
+            start_date=start_date, reached_boundary=reached_boundary,
+        )
+
+    # Combine cached and newly fetched PRs
+    return _combine_pr_results(cached_prs, newly_fetched_prs)
+
+
+def _update_pr_cache(  # noqa: PLR0913
+    cache_manager: CacheManager,
+    owner: str,
+    repo: str,
+    new_prs: list[dict],
+    existing_index: dict[str, Any] | None,
+    *,
+    start_date: datetime,
+    reached_boundary: bool,
+) -> None:
+    # Cache individual PR details
+    for pr in new_prs:
+        cache_manager.cache_pr_metadata(owner, repo, pr)
+
+    # Build or update PR index
+    now = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    earliest_pr: str | None
+
+    if existing_index:
+        # Merge with existing index
+        existing_prs = existing_index.get("prs", [])
+        existing_pr_numbers = {pr["number"] for pr in existing_prs}
+
+        # Add new PRs to index
+        for pr in new_prs:
+            if pr["number"] not in existing_pr_numbers:
+                existing_prs.append({
+                    "number": pr["number"],
+                    "created_at": pr["created_at"],
+                    "state": pr.get("state", "unknown"),
+                })
+
+        # Update timestamps
+        # Determine earliest_pr based on boundary information
+        if reached_boundary and existing_prs:
+            # We've reached the boundary - set earliest to start_date
+            earliest_pr = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            # Use existing or first PR's date
+            earliest_pr = existing_index.get("earliest_pr") or (
+                existing_prs[0]["created_at"] if existing_prs else None
+            )
+
+        pr_index_data = {
+            "prs": existing_prs,
+            "last_updated": now,
+            "earliest_pr": earliest_pr,
+            "coverage_complete": existing_index.get(
+                "coverage_complete", False,
+            ),
+        }
+    else:
+        # Create new index
+        # Determine earliest_pr based on boundary information
+        if reached_boundary and new_prs:
+            # We've reached the boundary - set earliest to start_date
+            earliest_pr = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            # Use actual earliest PR date or None if no PRs
+            earliest_pr = (
+                min(pr["created_at"] for pr in new_prs)
+                if new_prs else None
+            )
+
+        pr_index_data = {
+            "prs": [
+                {
+                    "number": pr["number"],
+                    "created_at": pr["created_at"],
+                    "state": pr.get("state", "unknown"),
+                }
+                for pr in new_prs
+            ],
+            "last_updated": now,
+            "earliest_pr": earliest_pr,
+            "coverage_complete": False,  # Future: detect when we have all PRs
+        }
+
+    cache_manager.cache_pr_index(owner, repo, pr_index_data)
+
+
+def _combine_pr_results(
+    cached_prs: list[dict],
+    new_prs: list[dict],
+) -> list[dict]:
     seen_pr_numbers = set()
-    unique_prs = []
+    combined_prs = []
 
-    # First add newly fetched PRs (to maintain original processing order)
-    for pr in pull_requests:
+    # Add new PRs first (maintain API order)
+    for pr in new_prs:
         if pr["number"] not in seen_pr_numbers:
-            unique_prs.append(pr)
+            combined_prs.append(pr)
             seen_pr_numbers.add(pr["number"])
 
-    # Then add cached PRs that weren't already fetched
+    # Add cached PRs that weren't in new results
     for pr in cached_prs:
         if pr["number"] not in seen_pr_numbers:
-            unique_prs.append(pr)
+            combined_prs.append(pr)
             seen_pr_numbers.add(pr["number"])
 
-    return unique_prs
+    return combined_prs

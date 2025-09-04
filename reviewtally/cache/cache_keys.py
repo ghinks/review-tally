@@ -17,3 +17,10 @@ def generate_pr_metadata_cache_key(
     pr_number: int,
 ) -> str:
     return f"pr_metadata:{owner}:{repo}:{pr_number}"
+
+
+def generate_pr_index_cache_key(
+    owner: str,
+    repo: str,
+) -> str:
+    return f"pr_index:{owner}:{repo}"
