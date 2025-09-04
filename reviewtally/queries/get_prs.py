@@ -172,7 +172,7 @@ def _update_pr_cache(  # noqa: PLR0913
 ) -> None:
     # Cache individual PR details
     for pr in new_prs:
-        cache_manager.cache_pr_metadata(owner, repo, pr)
+        cache_manager.cache_pr(owner, repo, pr)
 
     # Build or update PR index
     now = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -238,7 +238,7 @@ def _update_pr_cache(  # noqa: PLR0913
             "coverage_complete": False,  # Future: detect when we have all PRs
         }
 
-    cache_manager.cache_pr_index(owner, repo, pr_index_data)
+    cache_manager.set_pr_list(owner, repo, pr_index_data)
 
 
 def _combine_pr_results(

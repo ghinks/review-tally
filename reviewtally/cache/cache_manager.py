@@ -56,18 +56,6 @@ class CacheManager:
         repo: str,
         pull_number: int,
     ) -> list[dict[str, Any]] | None:
-        """
-        Get cached reviews data for a single PR.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            pull_number: PR number
-
-        Returns:
-            Cached review data or None if not found
-
-        """
         if not self.enabled or not self.cache:
             return None
 
@@ -92,17 +80,6 @@ class CacheManager:
         reviews_data: list[dict[str, Any]],
         pr_state: str | None = None,
     ) -> None:
-        """
-        Cache reviews data for a single PR.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            pull_number: PR number
-            reviews_data: Review data to cache
-            pr_state: PR state for TTL determination
-
-        """
         if not self.enabled or not self.cache:
             return
 
@@ -149,7 +126,7 @@ class CacheManager:
             return 6  # 6 hours for recent PRs
         return None  # Permanent cache for PRs older than 30 days
 
-    def get_cached_pr_metadata(
+    def get_cached_pr(
         self,
         owner: str,
         repo: str,
@@ -161,7 +138,7 @@ class CacheManager:
         cache_key = gen_pr_key(owner, repo, pr_number)
         return self.cache.get(cache_key)
 
-    def cache_pr_metadata(
+    def cache_pr(
         self,
         owner: str,
         repo: str,
@@ -191,7 +168,7 @@ class CacheManager:
             metadata=metadata,
         )
 
-    def get_pr_index(
+    def get_pr_list(
         self,
         owner: str,
         repo: str,
@@ -202,7 +179,7 @@ class CacheManager:
         cache_key = gen_pr_list_metadata_key(owner, repo)
         return self.cache.get(cache_key)
 
-    def cache_pr_index(
+    def set_pr_list(
         self,
         owner: str,
         repo: str,
@@ -241,7 +218,7 @@ class CacheManager:
             return [], None
 
         # Get PR index from cache
-        pr_index = self.get_pr_index(owner, repo)
+        pr_index = self.get_pr_list(owner, repo)
         if not pr_index:
             return [], None
 
@@ -253,7 +230,7 @@ class CacheManager:
             )
             if start_date <= created_at <= end_date:
                 # Get full PR details from detail cache
-                full_pr = self.get_cached_pr_metadata(
+                full_pr = self.get_cached_pr(
                     owner, repo, pr_summary["number"],
                 )
                 if full_pr:
