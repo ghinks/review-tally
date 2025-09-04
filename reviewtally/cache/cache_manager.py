@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any
 
 from reviewtally.cache import MODERATE_THRESHOLD_DAYS, RECENT_THRESHOLD_DAYS
 from reviewtally.cache.cache_keys import (
-    generate_pr_index_cache_key,
-    generate_pr_metadata_cache_key,
-    generate_single_pr_reviews_cache_key,
+    gen_pr_key,
+    gen_pr_list_metadata_key,
+    gen_pr_review_key,
 )
 from reviewtally.cache.sqlite_cache import SQLiteCache
 
@@ -71,7 +71,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = generate_single_pr_reviews_cache_key(
+        cache_key = gen_pr_review_key(
             owner, repo, pull_number,
         )
         cached_data = self.cache.get(cache_key)
@@ -106,7 +106,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return
 
-        cache_key = generate_single_pr_reviews_cache_key(
+        cache_key = gen_pr_review_key(
             owner, repo, pull_number,
         )
 
@@ -158,7 +158,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = generate_pr_metadata_cache_key(owner, repo, pr_number)
+        cache_key = gen_pr_key(owner, repo, pr_number)
         return self.cache.get(cache_key)
 
     def cache_pr_metadata(
@@ -171,7 +171,7 @@ class CacheManager:
             return
 
         pr_number = pr_data["number"]
-        cache_key = generate_pr_metadata_cache_key(owner, repo, pr_number)
+        cache_key = gen_pr_key(owner, repo, pr_number)
 
         # Calculate TTL based on PR creation date
         ttl_hours = self._calculate_pr_ttl(pr_data["created_at"])
@@ -199,7 +199,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = generate_pr_index_cache_key(owner, repo)
+        cache_key = gen_pr_list_metadata_key(owner, repo)
         return self.cache.get(cache_key)
 
     def cache_pr_index(
@@ -211,7 +211,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return
 
-        cache_key = generate_pr_index_cache_key(owner, repo)
+        cache_key = gen_pr_list_metadata_key(owner, repo)
 
         # PR index has moderate TTL - needs regular updates for active repos
         ttl_hours = 6  # 6 hours for PR index
