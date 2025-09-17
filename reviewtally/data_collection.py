@@ -182,6 +182,7 @@ def process_repositories(
             repo,
             context.start_date,
             context.end_date,
+            use_cache=context.use_cache,
         )
         timestamped_print(
             "Finished get_pull_requests_between_dates "
