@@ -126,7 +126,7 @@ class CacheManager:
             return 6  # 6 hours for recent PRs
         return None  # Permanent cache for PRs older than 30 days
 
-    def get_cached_pr(
+    def get_pr(
         self,
         owner: str,
         repo: str,
@@ -230,7 +230,7 @@ class CacheManager:
             )
             if start_date <= created_at <= end_date:
                 # Get full PR details from detail cache
-                full_pr = self.get_cached_pr(
+                full_pr = self.get_pr(
                     owner, repo, pr_summary["number"],
                 )
                 if full_pr:
