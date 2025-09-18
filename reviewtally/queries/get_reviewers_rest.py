@@ -315,12 +315,6 @@ def get_reviewers_with_comments_for_pull_requests(
         cached_results = []
         uncached_prs = pull_numbers
 
-    cache_status = "DISABLED" if not use_cache else "MISS"
-    print(  # noqa: T201
-        f"Cache {cache_status}: Fetching {len(uncached_prs)} PR reviews "
-        f"for {owner}/{repo} (total: {len(pull_numbers)} PRs)",
-    )
-
     # Fetch reviews and collect metadata
     review_data = _fetch_review_metadata(
         owner, repo, uncached_prs,
