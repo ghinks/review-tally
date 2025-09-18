@@ -132,11 +132,6 @@ def get_pull_requests_between_dates(
     reached_boundary = False
 
     if needs_backward or needs_forward or not pr_index:
-        print(  # noqa: T201
-            f"Cache UPDATE: Fetching additional PRs for {owner}/{repo} "
-            f"(backward: {needs_backward}, forward: {needs_forward})",
-        )
-
         # For now, do a full fetch - optimize later with incremental fetching
         newly_fetched_prs, reached_boundary = fetch_pull_requests_from_github(
             owner, repo, start_date, end_date,
