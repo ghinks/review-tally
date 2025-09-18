@@ -104,8 +104,6 @@ class CacheManager:
             metadata=metadata,
         )
 
-        ttl_desc = "forever" if ttl_hours is None else f"{ttl_hours}h"
-
     def _calculate_pr_ttl(self, pr_created_at: str) -> int | None:
         created_date = datetime.fromisoformat(
             pr_created_at.replace("Z", "+00:00"),
