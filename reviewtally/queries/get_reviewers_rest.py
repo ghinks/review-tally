@@ -315,8 +315,6 @@ def get_reviewers_with_comments_for_pull_requests(
         cached_results = []
         uncached_prs = pull_numbers
 
-    cache_status = "DISABLED" if not use_cache else "MISS"
-
     # Fetch reviews and collect metadata
     review_data = _fetch_review_metadata(
         owner, repo, uncached_prs,
