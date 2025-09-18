@@ -123,14 +123,6 @@ def get_pull_requests_between_dates(
         owner, repo, start_date, end_date,
     )
 
-    if cached_prs:
-        print(  # noqa: T201
-            f"Cache PARTIAL HIT: Found {len(cached_prs)} cached PRs for "
-            f"{owner}/{repo} ({start_date.strftime('%Y-%m-%d')} to "
-            f"{end_date.strftime('%Y-%m-%d')})",
-        )
-    else:
-        print( f"Cache PARTIAL HIT: No cached PRs for {owner}/{repo} ") # noqa: T201
 
     # Determine what additional data we need to fetch
     needs_backward = cache_manager.needs_backward_fetch(pr_index, start_date)

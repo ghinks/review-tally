@@ -65,9 +65,6 @@ class CacheManager:
         cached_data = self.cache.get(cache_key)
 
         if cached_data:
-            print(  # noqa: T201
-                f"Cache HIT: PR reviews for {owner}/{repo} PR #{pull_number}",
-            )
             return cached_data.get("reviews", [])
 
         return None
@@ -108,10 +105,6 @@ class CacheManager:
         )
 
         ttl_desc = "forever" if ttl_hours is None else f"{ttl_hours}h"
-        print(  # noqa: T201
-            f"Cache SET: PR reviews for {owner}/{repo} PR #{pull_number} "
-            f"(TTL: {ttl_desc})",
-        )
 
     def _calculate_pr_ttl(self, pr_created_at: str) -> int | None:
         created_date = datetime.fromisoformat(
