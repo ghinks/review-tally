@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import time
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -14,7 +15,14 @@ if TYPE_CHECKING:
 
 from reviewtally.cache.cache_manager import get_cache_manager
 from reviewtally.exceptions.local_exceptions import PaginationError
-from reviewtally.queries import GENERAL_TIMEOUT
+from reviewtally.queries import (
+    BACKOFF_MULTIPLIER,
+    GENERAL_TIMEOUT,
+    INITIAL_BACKOFF,
+    MAX_BACKOFF,
+    MAX_RETRIES,
+    RETRYABLE_STATUS_CODES,
+)
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 MAX_NUM_PAGES = 100
@@ -45,6 +53,61 @@ def backoff_if_ratelimited(headers: Mapping[str, str]) -> None:
     if sleep_for > 0:
         time.sleep(sleep_for)
 
+
+def _backoff_delay(attempt: int) -> None:
+    """Calculate exponential backoff delay with jitter (sync version)."""
+    delay = min(
+        INITIAL_BACKOFF * (BACKOFF_MULTIPLIER**attempt),
+        MAX_BACKOFF,
+    )
+    # Add jitter to prevent thundering herd
+    jitter = random.uniform(0.1, 0.5) * delay  # noqa: S311
+    time.sleep(delay + jitter)
+
+
+def _make_pr_request_with_retry(
+    url: str,
+    headers: dict[str, str],
+    params: dict[str, Any],
+) -> list[dict]:
+    """Make a single PR request with retry logic."""
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            response = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=GENERAL_TIMEOUT,
+            )
+
+            # Check for retryable status codes
+            if response.status_code in RETRYABLE_STATUS_CODES:
+                if attempt < MAX_RETRIES:
+                    _backoff_delay(attempt)
+                    continue
+                # Final attempt failed
+                response.raise_for_status()
+
+            # Handle rate limiting (existing logic)
+            backoff_if_ratelimited(response.headers)
+            response.raise_for_status()
+
+            return response.json()
+
+        except (
+            requests.exceptions.RequestException,
+            requests.exceptions.Timeout,
+        ):
+            if attempt < MAX_RETRIES:
+                _backoff_delay(attempt)
+                continue
+            # Final attempt failed, re-raise the exception
+            raise
+
+    # This should never be reached due to the loop structure
+    msg = "Failed to fetch pull requests after all retry attempts"
+    raise RuntimeError(msg)
+
 def fetch_pull_requests_from_github(
     owner: str,
     repo: str,
@@ -68,15 +131,7 @@ def fetch_pull_requests_from_github(
 
     while True:
         params = {**params, "page": page}
-        response = requests.get(
-            url,
-            headers=headers,
-            params=params,
-            timeout=GENERAL_TIMEOUT,
-        )
-        backoff_if_ratelimited(response.headers)
-        response.raise_for_status()
-        prs = response.json()
+        prs = _make_pr_request_with_retry(url, headers, params)
         if not prs:
             break
 
