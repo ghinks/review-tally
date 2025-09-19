@@ -27,6 +27,8 @@ class CommandLineArgs(TypedDict):
     chart_type: str
     chart_metrics: list[str]
     save_plot: str | None
+    plot_individual: bool
+    individual_chart_metric: str
     use_cache: bool
 
 
@@ -134,6 +136,24 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         help="Optional path to save the interactive HTML chart",
     )
 
+    # plotting options for individual analysis
+    parser.add_argument(
+        "--plot-individual",
+        action="store_true",
+        help=(
+            "Plot individual reviewer metrics as a pie chart (opens browser)"
+        ),
+    )
+    parser.add_argument(
+        "--individual-chart-metric",
+        choices=["reviews", "comments", "avg_comments_per_review",
+                "engagement_level", "thoroughness_score",
+                "avg_response_time_hours", "avg_completion_time_hours",
+                "active_review_days"],
+        default="reviews",
+        help="Metric to visualize in individual pie chart",
+    )
+
     # caching options
     parser.add_argument(
         "--no-cache",
@@ -197,5 +217,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         chart_type=args.chart_type,
         chart_metrics=chart_metrics,
         save_plot=args.save_plot,
+        plot_individual=args.plot_individual,
+        individual_chart_metric=args.individual_chart_metric,
         use_cache=not args.no_cache,
     )
