@@ -42,7 +42,7 @@ def main() -> None:
         f"seconds for {len(repo_names)} repositories",
     )
 
-    if args["sprint_analysis"]:
+    if args["sprint_analysis"] or args["plot_sprint"]:
         _handle_sprint_analysis(args, repo_names, start_time)
     else:
         _handle_individual_analysis(args, repo_names, start_time)

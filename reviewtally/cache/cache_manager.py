@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from reviewtally.cache import MODERATE_THRESHOLD_DAYS, RECENT_THRESHOLD_DAYS
 from reviewtally.cache.cache_keys import (
-    generate_single_pr_reviews_cache_key,
+    gen_pr_key,
+    gen_pr_list_metadata_key,
+    gen_pr_review_key,
 )
 from reviewtally.cache.sqlite_cache import SQLiteCache
 
@@ -52,30 +56,15 @@ class CacheManager:
         repo: str,
         pull_number: int,
     ) -> list[dict[str, Any]] | None:
-        """
-        Get cached reviews data for a single PR.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            pull_number: PR number
-
-        Returns:
-            Cached review data or None if not found
-
-        """
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = generate_single_pr_reviews_cache_key(
+        cache_key = gen_pr_review_key(
             owner, repo, pull_number,
         )
         cached_data = self.cache.get(cache_key)
 
         if cached_data:
-            print(  # noqa: T201
-                f"Cache HIT: PR reviews for {owner}/{repo} PR #{pull_number}",
-            )
             return cached_data.get("reviews", [])
 
         return None
@@ -88,21 +77,10 @@ class CacheManager:
         reviews_data: list[dict[str, Any]],
         pr_state: str | None = None,
     ) -> None:
-        """
-        Cache reviews data for a single PR.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            pull_number: PR number
-            reviews_data: Review data to cache
-            pr_state: PR state for TTL determination
-
-        """
         if not self.enabled or not self.cache:
             return
 
-        cache_key = generate_single_pr_reviews_cache_key(
+        cache_key = gen_pr_review_key(
             owner, repo, pull_number,
         )
 
@@ -126,11 +104,172 @@ class CacheManager:
             metadata=metadata,
         )
 
-        ttl_desc = "forever" if ttl_hours is None else f"{ttl_hours}h"
-        print(  # noqa: T201
-            f"Cache SET: PR reviews for {owner}/{repo} PR #{pull_number} "
-            f"(TTL: {ttl_desc})",
+    def _calculate_pr_ttl(self, pr_created_at: str) -> int | None:
+        created_date = datetime.fromisoformat(
+            pr_created_at.replace("Z", "+00:00"),
         )
+        now = datetime.now(created_date.tzinfo)
+        days_ago = (now - created_date).days
+
+        if days_ago < RECENT_THRESHOLD_DAYS:
+            return 1  # 1 hour for very recent PRs
+        if days_ago < MODERATE_THRESHOLD_DAYS:
+            return 6  # 6 hours for recent PRs
+        return None  # Permanent cache for PRs older than 30 days
+
+    def get_pr(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int,
+    ) -> dict[str, Any] | None:
+        if not self.enabled or not self.cache:
+            return None
+
+        cache_key = gen_pr_key(owner, repo, pr_number)
+        return self.cache.get(cache_key)
+
+    def cache_pr(
+        self,
+        owner: str,
+        repo: str,
+        pr_data: dict[str, Any],
+    ) -> None:
+        if not self.enabled or not self.cache:
+            return
+
+        pr_number = pr_data["number"]
+        cache_key = gen_pr_key(owner, repo, pr_number)
+
+        # Calculate TTL based on PR creation date
+        ttl_hours = self._calculate_pr_ttl(pr_data["created_at"])
+
+        metadata = {
+            "owner": owner,
+            "repo": repo,
+            "pr_number": pr_number,
+            "pr_state": pr_data.get("state"),
+            "created_at": pr_data["created_at"],
+        }
+
+        self.cache.set(
+            cache_key,
+            pr_data,
+            ttl_hours=ttl_hours,
+            metadata=metadata,
+        )
+
+    def get_pr_list(
+        self,
+        owner: str,
+        repo: str,
+    ) -> dict[str, Any] | None:
+        if not self.enabled or not self.cache:
+            return None
+
+        cache_key = gen_pr_list_metadata_key(owner, repo)
+        return self.cache.get(cache_key)
+
+    def set_pr_list(
+        self,
+        owner: str,
+        repo: str,
+        pr_index_data: dict[str, Any],
+    ) -> None:
+        if not self.enabled or not self.cache:
+            return
+
+        cache_key = gen_pr_list_metadata_key(owner, repo)
+
+        # PR index has moderate TTL - needs regular updates for active repos
+        ttl_hours = 6  # 6 hours for PR index
+
+        metadata = {
+            "owner": owner,
+            "repo": repo,
+            "pr_count": len(pr_index_data.get("prs", [])),
+            "coverage_complete": pr_index_data.get("coverage_complete", False),
+        }
+
+        self.cache.set(
+            cache_key,
+            pr_index_data,
+            ttl_hours=ttl_hours,
+            metadata=metadata,
+        )
+
+    def get_cached_prs_for_date_range(
+        self,
+        owner: str,
+        repo: str,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+        if not self.enabled or not self.cache:
+            return [], None
+
+        # Get PR index from cache
+        pr_index = self.get_pr_list(owner, repo)
+        if not pr_index:
+            return [], None
+
+        # Filter PRs by date range from lightweight index
+        cached_prs = []
+        for pr_summary in pr_index.get("prs", []):
+            created_at = datetime.fromisoformat(
+                pr_summary["created_at"].replace("Z", "+00:00"),
+            )
+            if start_date <= created_at <= end_date:
+                # Get full PR details from detail cache
+                full_pr = self.get_pr(
+                    owner, repo, pr_summary["number"],
+                )
+                if full_pr:
+                    cached_prs.append(full_pr)
+
+        return cached_prs, pr_index
+
+    def needs_backward_fetch(
+        self,
+        pr_index: dict[str, Any] | None,
+        start_date: datetime,
+    ) -> bool:
+        if not pr_index or pr_index.get("coverage_complete", False):
+            return False
+
+        earliest_pr = pr_index.get("earliest_pr")
+        if earliest_pr is None:
+            # No PRs exist in this repo - no backward fetch needed
+            return False
+        if not earliest_pr:
+            print("Warning: PR index missing earliest_pr field")  # noqa: T201
+            return True
+
+        earliest_date = datetime.fromisoformat(
+            earliest_pr.replace("Z", "+00:00"),
+        )
+        print(f" {start_date.date()}: {earliest_date.date()}")  # noqa: T201
+        return start_date.date() < earliest_date.date()
+
+    def needs_forward_fetch(
+        self,
+        pr_index: dict[str, Any] | None,
+    ) -> bool:
+        if not pr_index:
+            return True
+
+        # Check if cache is stale (older than TTL threshold)
+        last_updated = pr_index.get("last_updated")
+        if not last_updated:
+            return True
+
+        last_update_time = datetime.fromisoformat(
+            last_updated.replace("Z", "+00:00"),
+        )
+        now = datetime.now(last_update_time.tzinfo)
+        hours_since_update = (now - last_update_time).total_seconds() / 3600
+
+        return hours_since_update > 1  # Refresh if older than 1 hour
 
 # Global cache manager instance
 _cache_manager: CacheManager | None = None
