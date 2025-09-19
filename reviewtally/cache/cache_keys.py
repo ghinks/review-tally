@@ -3,9 +3,25 @@
 from __future__ import annotations
 
 
-def generate_single_pr_reviews_cache_key(
+def gen_pr_review_key(
     owner: str,
     repo: str,
     pull_number: int,
 ) -> str:
     return f"pr_reviews:{owner}:{repo}:{pull_number}"
+
+
+def gen_pr_key(
+    owner: str,
+    repo: str,
+    pr_number: int,
+) -> str:
+    return f"pr_metadata:{owner}:{repo}:{pr_number}"
+
+
+def gen_pr_list_metadata_key(
+    owner: str,
+    repo: str,
+) -> str:
+    """Key for storing PR list metadata (index)."""
+    return f"pr_index:{owner}:{repo}"
