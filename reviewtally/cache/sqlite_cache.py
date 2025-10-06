@@ -40,7 +40,10 @@ class SQLiteCache:
                     cached_at INTEGER NOT NULL,
                     expires_at INTEGER,
                     content_hash TEXT,
-                    metadata TEXT
+                    metadata TEXT,
+                    organization TEXT,
+                    repo TEXT,
+                    request_type TEXT
                 )
             """)
 
@@ -48,6 +51,30 @@ class SQLiteCache:
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_expires_at
                 ON api_cache(expires_at)
+            """)
+
+            # Index for organization queries
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_organization
+                ON api_cache(organization)
+            """)
+
+            # Index for repo queries
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_repo
+                ON api_cache(repo)
+            """)
+
+            # Composite index for organization+repo queries
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_org_repo
+                ON api_cache(organization, repo)
+            """)
+
+            # Index for request type queries
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_request_type
+                ON api_cache(request_type)
             """)
 
             conn.commit()
@@ -104,15 +131,28 @@ class SQLiteCache:
         content_hash = str(hash(data_json))
         metadata_json = json.dumps(metadata) if metadata else None
 
+        # Extract organization and repo from metadata
+        organization = None
+        repo = None
+        if metadata:
+            organization = metadata.get("owner")
+            repo = metadata.get("repo")
+
+        # Extract request type from cache key
+        request_type = None
+        if ":" in key:
+            request_type = key.split(":")[0]
+
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 INSERT OR REPLACE INTO api_cache
                 (cache_key, data, cached_at, expires_at, content_hash,
-                 metadata)
-                VALUES (?, ?, ?, ?, ?, ?)
+                 metadata, organization, repo, request_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 key, data_json, current_time, expires_at,
-                content_hash, metadata_json,
+                content_hash, metadata_json, organization, repo,
+                request_type,
             ))
 
             conn.commit()
