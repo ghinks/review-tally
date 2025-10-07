@@ -24,11 +24,12 @@ tqdm = "^4.67.1"
 types-tqdm = "^4.67.0.20250301"
 plotly = "^6.3.0"
 dash = "^3.2.0"
+ruff = "^0.13.3"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
-ruff = ">=0.8.4,<0.13.0"
+ruff = ">=0.8.4,<0.14.0"
 isort = ">=5.13.2,<7.0.0"
 pytest-aiohttp = "^1.0.5"
 pytest-asyncio = ">=0.25,<1.3"
