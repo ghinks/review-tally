@@ -87,6 +87,7 @@ def plot_individual_pie_chart(
             labels=labels,
             values=values,
             name=metric_display_name,
+            direction="clockwise",
             hovertemplate="<b>%{label}</b><br>"
                          f"{metric_display_name}: %{{value}}<br>"
                          "Percentage: %{percent}<br>"
