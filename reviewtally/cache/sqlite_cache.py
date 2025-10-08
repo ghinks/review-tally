@@ -117,7 +117,7 @@ class SQLiteCache:
 
         result = cursor.fetchone()
         if result:
-            data_json, expires_at = result
+            data_json, _expires_at = result
             return json.loads(data_json)
 
         return None
