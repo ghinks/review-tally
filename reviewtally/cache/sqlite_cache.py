@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
 import time
@@ -27,57 +28,73 @@ class SQLiteCache:
         self.cache_dir = cache_dir
         self.cache_dir.mkdir(exist_ok=True)
         self.db_path = self.cache_dir / "api_cache.db"
+        self._connection: sqlite3.Connection | None = None
 
         self._init_database()
 
+    def _get_connection(self) -> sqlite3.Connection:
+        """Get or create a persistent database connection."""
+        if self._connection is None or self._connection_needs_refresh():
+            # Close existing connection if it exists but needs refresh
+            if self._connection:
+                with contextlib.suppress(sqlite3.Error):
+                    # Ignore errors during close - connection might be bad
+                    self._connection.close()
+
+            self._connection = sqlite3.connect(
+                self.db_path,
+                timeout=30.0,
+                check_same_thread=False,
+            )
+        return self._connection
+
+    def _connection_needs_refresh(self) -> bool:
+        """Check if the connection needs to be refreshed due to staleness."""
+        if self._connection is None:
+            return False
+
+        try:
+            # Test connection health with a simple query
+            self._connection.execute("SELECT 1")
+        except sqlite3.Error:
+            # Connection is stale or broken
+            return True
+        else:
+            return False
+
+    def close(self) -> None:
+        """Close the database connection."""
+        if self._connection:
+            with contextlib.suppress(sqlite3.Error):
+                # Ignore errors during close - connection might be in bad state
+                self._connection.close()
+            self._connection = None
+
+    def __del__(self) -> None:
+        """Ensure connection is closed when object is destroyed."""
+        self.close()
+
     def _init_database(self) -> None:
         """Initialize the cache database with required tables."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS api_cache (
-                    cache_key TEXT PRIMARY KEY,
-                    data TEXT NOT NULL,
-                    cached_at INTEGER NOT NULL,
-                    expires_at INTEGER,
-                    content_hash TEXT,
-                    metadata TEXT,
-                    organization TEXT,
-                    repo TEXT,
-                    request_type TEXT
-                )
-            """)
+        conn = self._get_connection()
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS api_cache (
+                cache_key TEXT PRIMARY KEY,
+                data TEXT NOT NULL,
+                cached_at INTEGER NOT NULL,
+                expires_at INTEGER,
+                content_hash TEXT,
+                metadata TEXT
+            )
+        """)
 
-            # Index for efficient TTL cleanup
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_expires_at
-                ON api_cache(expires_at)
-            """)
+        # Index for efficient TTL cleanup
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_expires_at
+            ON api_cache(expires_at)
+        """)
 
-            # Index for organization queries
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_organization
-                ON api_cache(organization)
-            """)
-
-            # Index for repo queries
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_repo
-                ON api_cache(repo)
-            """)
-
-            # Composite index for organization+repo queries
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_org_repo
-                ON api_cache(organization, repo)
-            """)
-
-            # Index for request type queries
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_request_type
-                ON api_cache(request_type)
-            """)
-
-            conn.commit()
+        conn.commit()
 
     def get(self, key: str) -> dict[str, Any] | None:
         """
@@ -92,16 +109,16 @@ class SQLiteCache:
         """
         current_time = int(time.time())
 
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("""
-                SELECT data, expires_at FROM api_cache
-                WHERE cache_key = ? AND (expires_at IS NULL OR expires_at > ?)
-            """, (key, current_time))
+        conn = self._get_connection()
+        cursor = conn.execute("""
+            SELECT data, expires_at FROM api_cache
+            WHERE cache_key = ? AND (expires_at IS NULL OR expires_at > ?)
+        """, (key, current_time))
 
-            result = cursor.fetchone()
-            if result:
-                data_json, _expires_at = result
-                return json.loads(data_json)
+        result = cursor.fetchone()
+        if result:
+            data_json, _expires_at = result
+            return json.loads(data_json)
 
         return None
 
@@ -131,31 +148,18 @@ class SQLiteCache:
         content_hash = str(hash(data_json))
         metadata_json = json.dumps(metadata) if metadata else None
 
-        # Extract organization and repo from metadata
-        organization = None
-        repo = None
-        if metadata:
-            organization = metadata.get("owner")
-            repo = metadata.get("repo")
+        conn = self._get_connection()
+        conn.execute("""
+            INSERT OR REPLACE INTO api_cache
+            (cache_key, data, cached_at, expires_at, content_hash,
+             metadata)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            key, data_json, current_time, expires_at,
+            content_hash, metadata_json,
+        ))
 
-        # Extract request type from cache key
-        request_type = None
-        if ":" in key:
-            request_type = key.split(":")[0]
-
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                INSERT OR REPLACE INTO api_cache
-                (cache_key, data, cached_at, expires_at, content_hash,
-                 metadata, organization, repo, request_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                key, data_json, current_time, expires_at,
-                content_hash, metadata_json, organization, repo,
-                request_type,
-            ))
-
-            conn.commit()
+        conn.commit()
 
     def delete(self, key: str) -> bool:
         """
@@ -168,12 +172,12 @@ class SQLiteCache:
             True if entry was deleted, False if not found
 
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "DELETE FROM api_cache WHERE cache_key = ?", (key,),
-            )
-            conn.commit()
-            return cursor.rowcount > 0
+        conn = self._get_connection()
+        cursor = conn.execute(
+            "DELETE FROM api_cache WHERE cache_key = ?", (key,),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
 
     def cleanup_expired(self) -> int:
         """
@@ -185,13 +189,13 @@ class SQLiteCache:
         """
         current_time = int(time.time())
 
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("""
-                DELETE FROM api_cache
-                WHERE expires_at IS NOT NULL AND expires_at <= ?
-            """, (current_time,))
-            conn.commit()
-            return cursor.rowcount
+        conn = self._get_connection()
+        cursor = conn.execute("""
+            DELETE FROM api_cache
+            WHERE expires_at IS NOT NULL AND expires_at <= ?
+        """, (current_time,))
+        conn.commit()
+        return cursor.rowcount
 
     def clear_all(self) -> int:
         """
@@ -201,10 +205,10 @@ class SQLiteCache:
             Number of entries removed
 
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("DELETE FROM api_cache")
-            conn.commit()
-            return cursor.rowcount
+        conn = self._get_connection()
+        cursor = conn.execute("DELETE FROM api_cache")
+        conn.commit()
+        return cursor.rowcount
 
     def get_stats(self) -> dict[str, Any]:
         """
@@ -216,28 +220,28 @@ class SQLiteCache:
         """
         current_time = int(time.time())
 
-        with sqlite3.connect(self.db_path) as conn:
-            # Total entries
-            total_cursor = conn.execute("SELECT COUNT(*) FROM api_cache")
-            total_entries = total_cursor.fetchone()[0]
+        conn = self._get_connection()
+        # Total entries
+        total_cursor = conn.execute("SELECT COUNT(*) FROM api_cache")
+        total_entries = total_cursor.fetchone()[0]
 
-            # Expired entries
-            expired_cursor = conn.execute("""
-                SELECT COUNT(*) FROM api_cache
-                WHERE expires_at IS NOT NULL AND expires_at <= ?
-            """, (current_time,))
-            expired_entries = expired_cursor.fetchone()[0]
+        # Expired entries
+        expired_cursor = conn.execute("""
+            SELECT COUNT(*) FROM api_cache
+            WHERE expires_at IS NOT NULL AND expires_at <= ?
+        """, (current_time,))
+        expired_entries = expired_cursor.fetchone()[0]
 
-            # Cache size
-            size_cursor = conn.execute(
-                "SELECT SUM(LENGTH(data)) FROM api_cache",
-            )
-            cache_size_bytes = size_cursor.fetchone()[0] or 0
+        # Cache size
+        size_cursor = conn.execute(
+            "SELECT SUM(LENGTH(data)) FROM api_cache",
+        )
+        cache_size_bytes = size_cursor.fetchone()[0] or 0
 
-            # Database file size
-            db_size_bytes = (
-                self.db_path.stat().st_size if self.db_path.exists() else 0
-            )
+        # Database file size
+        db_size_bytes = (
+            self.db_path.stat().st_size if self.db_path.exists() else 0
+        )
 
         return {
             "total_entries": total_entries,
@@ -261,14 +265,14 @@ class SQLiteCache:
             List of matching cache keys
 
         """
-        with sqlite3.connect(self.db_path) as conn:
-            if pattern:
-                cursor = conn.execute(
-                    "SELECT cache_key FROM api_cache WHERE cache_key LIKE ?",
-                    (pattern,),
-                )
-            else:
-                cursor = conn.execute("SELECT cache_key FROM api_cache")
+        conn = self._get_connection()
+        if pattern:
+            cursor = conn.execute(
+                "SELECT cache_key FROM api_cache WHERE cache_key LIKE ?",
+                (pattern,),
+            )
+        else:
+            cursor = conn.execute("SELECT cache_key FROM api_cache")
 
-            return [row[0] for row in cursor.fetchall()]
+        return [row[0] for row in cursor.fetchall()]
 

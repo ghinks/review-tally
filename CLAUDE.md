@@ -23,28 +23,28 @@ pre-commit install
 ### Code Quality and Testing
 ```bash
 # Run all tests
-pytest
+poetry run pytest
 
 # Run specific test file
-pytest tests/test_get_prs.py
+poetry run pytest tests/test_get_prs.py
 
 # Run tests with asyncio support (configured in pyproject.toml)
-pytest tests/get_reviewers/
+poetry run pytest tests/get_reviewers/
 
 # Lint code with ruff
-ruff check .
+poetry run ruff check .
 
 # Format code with ruff
-ruff format .
+poetry run ruff format .
 
 # Type checking with mypy
-mypy reviewtally/
+poetry run mypy reviewtally/
 
 # Sort imports with isort
-isort .
+poetry run isort .
 
 # Run pre-commit hooks manually on all files
-pre-commit run --all-files
+poetry run pre-commit run --all-files
 ```
 
 ### Running the Application
