@@ -81,6 +81,9 @@ review-tally -o expressjs -l javascript --plot-sprint --save-plot sprint_metrics
 review-tally -o expressjs -l javascript --sprint-analysis --plot-sprint --output-path sprint_data.csv
 ```
 
+### Example: Sprint bar chart for expressjs
+![Sprint Analysis Bar Chart](docs/expressjs-bar-sprint-data.png)
+
 ## Individual Reviewer Visualization
 The tool can generate pie charts showing the distribution of metrics across individual reviewers. Use `--plot-individual` to create interactive pie charts that open in your browser.
 
@@ -105,6 +108,9 @@ review-tally -o expressjs -l javascript --plot-individual --individual-chart-met
 ```shell
 review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_distribution.html
 ```
+
+### Example: Comment distribution pie chart for expressjs
+![Individual Reviewer Pie Chart](docs/expressjs-pie-num-comments.png)
 
 ### Available metrics for pie charts:
 - `reviews` - Number of reviews per reviewer (default)
