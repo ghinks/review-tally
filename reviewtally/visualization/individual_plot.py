@@ -81,7 +81,7 @@ def plot_individual_pie_chart(
 
     metric_display_name = SUPPORTED_INDIVIDUAL_METRICS.get(metric, metric)
     # using a custom text value here to only
-    # show labels for slices > threshold%
+    # show labels for slices > threshold percentage
     total = sum(values)
     threshold = 3  # percent
     custom_text = [
