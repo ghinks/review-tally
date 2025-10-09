@@ -8,7 +8,6 @@ import plotly.io as pio  # type: ignore[import]
 SUPPORTED_INDIVIDUAL_METRICS = {
     "reviews": "Reviews",
     "comments": "Comments",
-    "avg_comments_per_review": "Avg Comments/Review",
     "engagement_level": "Engagement Level",
     "thoroughness_score": "Thoroughness Score",
     "avg_response_time_hours": "Avg Response Time (hrs)",

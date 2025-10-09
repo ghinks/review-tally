@@ -109,7 +109,6 @@ review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_d
 ### Available metrics for pie charts:
 - `reviews` - Number of reviews per reviewer (default)
 - `comments` - Number of comments per reviewer
-- `avg_comments_per_review` - Average comments per review
 - `engagement_level` - Engagement level (High/Medium/Low)
 - `thoroughness_score` - Thoroughness percentage score
 - `avg_response_time_hours` - Average response time in hours
@@ -133,7 +132,7 @@ review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_d
 * --chart-metrics Comma-separated sprint metrics to plot. Default: total_reviews,total_comments. Available: total_reviews,total_comments,unique_reviewers,avg_comments_per_review,reviews_per_reviewer,avg_response_time_hours,avg_completion_time_hours,active_review_days
 * --save-plot Optional path to save the interactive HTML chart
 * --plot-individual Generate pie charts showing individual reviewer metric distribution (opens in browser)
-* --individual-chart-metric Metric to visualize in individual pie chart. Default: reviews. Available: reviews,comments,avg_comments_per_review,engagement_level,thoroughness_score,avg_response_time_hours,avg_completion_time_hours,active_review_days
+* --individual-chart-metric Metric to visualize in individual pie chart. Default: reviews. Available: reviews,comments,engagement_level,thoroughness_score,avg_response_time_hours,avg_completion_time_hours,active_review_days
 * --no-cache Disable PR review caching (always fetch fresh data from API). By default, caching is enabled for better performance.
 
 ## GitHub API Rate Limiting

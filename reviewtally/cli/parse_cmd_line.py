@@ -146,7 +146,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
     parser.add_argument(
         "--individual-chart-metric",
-        choices=["reviews", "comments", "avg_comments_per_review",
+        choices=["reviews", "comments",
                 "engagement_level", "thoroughness_score",
                 "avg_response_time_hours", "avg_completion_time_hours",
                 "active_review_days"],
