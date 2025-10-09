@@ -80,13 +80,23 @@ def plot_individual_pie_chart(
         return
 
     metric_display_name = SUPPORTED_INDIVIDUAL_METRICS.get(metric, metric)
-
+    # using a custom text value here to only
+    # show labels for slices > threshold%
+    total = sum(values)
+    threshold = 3  # percent
+    custom_text = [
+        f"{label}: {value}" if (value / total * 100) > threshold else ""
+        for label, value in zip(labels, values)
+    ]
     # Create pie chart
     fig = go.Figure(data=[
         go.Pie(
             labels=labels,
             values=values,
             name=metric_display_name,
+            hoverinfo="label+value+percent",
+            text=custom_text,
+            textinfo="text",
             direction="clockwise",
             hovertemplate="<b>%{label}</b><br>"
                          f"{metric_display_name}: %{{value}}<br>"
