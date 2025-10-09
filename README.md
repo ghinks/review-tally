@@ -81,6 +81,41 @@ review-tally -o expressjs -l javascript --plot-sprint --save-plot sprint_metrics
 review-tally -o expressjs -l javascript --sprint-analysis --plot-sprint --output-path sprint_data.csv
 ```
 
+## Individual Reviewer Visualization
+The tool can generate pie charts showing the distribution of metrics across individual reviewers. Use `--plot-individual` to create interactive pie charts that open in your browser.
+
+### Basic pie chart (shows review distribution):
+```shell
+review-tally -o expressjs -l javascript --plot-individual
+```
+
+### Pie chart with specific metrics:
+```shell
+# Show engagement level distribution
+review-tally -o expressjs -l javascript --plot-individual --individual-chart-metric engagement_level
+
+# Show thoroughness score distribution
+review-tally -o expressjs -l javascript --plot-individual --individual-chart-metric thoroughness_score
+
+# Show comment distribution
+review-tally -o expressjs -l javascript --plot-individual --individual-chart-metric comments
+```
+
+### Saving the pie chart to a file:
+```shell
+review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_distribution.html
+```
+
+### Available metrics for pie charts:
+- `reviews` - Number of reviews per reviewer (default)
+- `comments` - Number of comments per reviewer
+- `avg_comments_per_review` - Average comments per review
+- `engagement_level` - Engagement level (High/Medium/Low)
+- `thoroughness_score` - Thoroughness percentage score
+- `avg_response_time_hours` - Average response time in hours
+- `avg_completion_time_hours` - Average completion time in hours
+- `active_review_days` - Number of active review days
+
 
 ## Options
 
@@ -97,6 +132,8 @@ review-tally -o expressjs -l javascript --sprint-analysis --plot-sprint --output
 * --chart-type Chart type for sprint metrics (bar or line). Default: bar
 * --chart-metrics Comma-separated sprint metrics to plot. Default: total_reviews,total_comments. Available: total_reviews,total_comments,unique_reviewers,avg_comments_per_review,reviews_per_reviewer,avg_response_time_hours,avg_completion_time_hours,active_review_days
 * --save-plot Optional path to save the interactive HTML chart
+* --plot-individual Generate pie charts showing individual reviewer metric distribution (opens in browser)
+* --individual-chart-metric Metric to visualize in individual pie chart. Default: reviews. Available: reviews,comments,avg_comments_per_review,engagement_level,thoroughness_score,avg_response_time_hours,avg_completion_time_hours,active_review_days
 * --no-cache Disable PR review caching (always fetch fresh data from API). By default, caching is enabled for better performance.
 
 ## GitHub API Rate Limiting

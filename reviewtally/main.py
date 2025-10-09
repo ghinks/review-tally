@@ -18,6 +18,10 @@ from reviewtally.exporters.sprint_export import export_sprint_csv
 from reviewtally.metrics_calculation import calculate_reviewer_metrics
 from reviewtally.output_formatting import generate_results_table
 from reviewtally.queries.get_repos_gql import get_repos
+from reviewtally.visualization.individual_plot import (
+    SUPPORTED_INDIVIDUAL_METRICS,
+    plot_individual_pie_chart,
+)
 from reviewtally.visualization.sprint_plot import plot_sprint_metrics
 
 
@@ -113,6 +117,35 @@ def _handle_individual_analysis(
     )
     results_table = generate_results_table(reviewer_stats, args["metrics"])
     print(results_table)  # noqa: T201
+
+    if args["plot_individual"]:
+        _handle_individual_plotting(args, reviewer_stats)
+
+
+def _handle_individual_plotting(
+    args: CommandLineArgs,
+    reviewer_stats: dict[str, dict[str, Any]],
+) -> None:
+    """Handle individual plotting functionality."""
+    metric_display_name = SUPPORTED_INDIVIDUAL_METRICS.get(
+        args["individual_chart_metric"],
+        args["individual_chart_metric"],
+    )
+
+    org_name = args["org_name"] or "Organization"
+    title = (
+        f"{metric_display_name} Distribution - {org_name} | "
+        f"{args['start_date'].date()} to {args['end_date'].date()}"
+    ).strip()
+    try:
+        plot_individual_pie_chart(
+            reviewer_stats=reviewer_stats,
+            metric=args["individual_chart_metric"],
+            title=title,
+            save_path=args["save_plot"],
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"Individual plotting failed: {e}")  # noqa: T201
 
 
 def _print_sprint_summary(team_metrics: dict[str, dict[str, Any]]) -> None:
