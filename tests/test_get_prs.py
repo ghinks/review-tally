@@ -59,8 +59,8 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
 
         # Assert the result
         assert (
-            len(pull_requests) ==
-            TestGetPullRequestsBetweenDates.EXPECTED_LEN - 1
+            len(pull_requests)
+            == TestGetPullRequestsBetweenDates.EXPECTED_LEN - 1
         )
         assert (
             pull_requests[0]["number"]
@@ -72,7 +72,7 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
         )
 
     @patch("requests.get")
-    def test_raises_after_100_pages(self, mock_get) -> None: # noqa: ANN001
+    def test_raises_after_100_pages(self, mock_get) -> None:  # noqa: ANN001
         # Always return a non-empty page with a PR newer than end_date,
         # so pagination continues until the function's max-page limit is hit.
         def side_effect(*_args: object, **_kwargs: object) -> Mock:
@@ -97,6 +97,7 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
 
         with self.assertRaises(PaginationError):
             get_pull_requests_between_dates(owner, repo, start_date, end_date)
+
 
 if __name__ == "__main__":
     unittest.main()

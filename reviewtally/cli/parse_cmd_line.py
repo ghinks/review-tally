@@ -36,6 +36,7 @@ def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
     print(f"Current version is {version}")  # noqa: T201
 
+
 def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare
@@ -110,9 +111,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     mut_exc_plot_group.add_argument(
         "--plot-sprint",
         action="store_true",
-        help=(
-            "Plot sprint metrics as an interactive chart (opens browser)"
-        ),
+        help=("Plot sprint metrics as an interactive chart (opens browser)"),
     )
     parser.add_argument(
         "--chart-type",
@@ -146,10 +145,15 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
     parser.add_argument(
         "--individual-chart-metric",
-        choices=["reviews", "comments",
-                "engagement_level", "thoroughness_score",
-                "avg_response_time_hours", "avg_completion_time_hours",
-                "active_review_days"],
+        choices=[
+            "reviews",
+            "comments",
+            "engagement_level",
+            "thoroughness_score",
+            "avg_response_time_hours",
+            "avg_completion_time_hours",
+            "active_review_days",
+        ],
         default="reviews",
         help="Metric to visualize in individual pie chart",
     )
@@ -204,6 +208,18 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         chart_metrics = args.chart_metrics.split(",")
     else:
         chart_metrics = [args.chart_metrics]
+
+    if args.plot_sprint and args.individual_chart_metric:
+        print(  # noqa: T201
+            "Error: chart metrics and individual chart metric "
+            "are mutually exclusive.",
+        )
+        sys.exit(1)
+    if args.plot_individual and args.chart_metrics:
+        print(  # noqa: T201
+            "Error: plot individual and chart metrics are mutually exclusive.",
+        )
+        sys.exit(1)
 
     return CommandLineArgs(
         org_name=args.org,

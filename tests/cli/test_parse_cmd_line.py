@@ -218,16 +218,19 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
         self.assertEqual(
-            result["start_date"], datetime(2023, 1, 1, tzinfo=timezone.utc),
+            result["start_date"],
+            datetime(2023, 1, 1, tzinfo=timezone.utc),
         )
         self.assertEqual(
-            result["end_date"], datetime(2023, 1, 15, tzinfo=timezone.utc),
+            result["end_date"],
+            datetime(2023, 1, 15, tzinfo=timezone.utc),
         )
         # Defaults for new args
         self.assertFalse(result["plot_sprint"])
         self.assertEqual(result["chart_type"], "bar")
         self.assertEqual(
-            result["chart_metrics"], ["total_reviews", "total_comments"],
+            result["chart_metrics"],
+            ["total_reviews", "total_comments"],
         )
         self.assertIsNone(result["save_plot"])
 

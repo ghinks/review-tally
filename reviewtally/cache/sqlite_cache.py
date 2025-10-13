@@ -110,10 +110,13 @@ class SQLiteCache:
         current_time = int(time.time())
 
         conn = self._get_connection()
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             SELECT data, expires_at FROM api_cache
             WHERE cache_key = ? AND (expires_at IS NULL OR expires_at > ?)
-        """, (key, current_time))
+        """,
+            (key, current_time),
+        )
 
         result = cursor.fetchone()
         if result:
@@ -149,15 +152,22 @@ class SQLiteCache:
         metadata_json = json.dumps(metadata) if metadata else None
 
         conn = self._get_connection()
-        conn.execute("""
+        conn.execute(
+            """
             INSERT OR REPLACE INTO api_cache
             (cache_key, data, cached_at, expires_at, content_hash,
              metadata)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            key, data_json, current_time, expires_at,
-            content_hash, metadata_json,
-        ))
+        """,
+            (
+                key,
+                data_json,
+                current_time,
+                expires_at,
+                content_hash,
+                metadata_json,
+            ),
+        )
 
         conn.commit()
 
@@ -174,7 +184,8 @@ class SQLiteCache:
         """
         conn = self._get_connection()
         cursor = conn.execute(
-            "DELETE FROM api_cache WHERE cache_key = ?", (key,),
+            "DELETE FROM api_cache WHERE cache_key = ?",
+            (key,),
         )
         conn.commit()
         return cursor.rowcount > 0
@@ -190,10 +201,13 @@ class SQLiteCache:
         current_time = int(time.time())
 
         conn = self._get_connection()
-        cursor = conn.execute("""
+        cursor = conn.execute(
+            """
             DELETE FROM api_cache
             WHERE expires_at IS NOT NULL AND expires_at <= ?
-        """, (current_time,))
+        """,
+            (current_time,),
+        )
         conn.commit()
         return cursor.rowcount
 
@@ -226,10 +240,13 @@ class SQLiteCache:
         total_entries = total_cursor.fetchone()[0]
 
         # Expired entries
-        expired_cursor = conn.execute("""
+        expired_cursor = conn.execute(
+            """
             SELECT COUNT(*) FROM api_cache
             WHERE expires_at IS NOT NULL AND expires_at <= ?
-        """, (current_time,))
+        """,
+            (current_time,),
+        )
         expired_entries = expired_cursor.fetchone()[0]
 
         # Cache size
@@ -275,4 +292,3 @@ class SQLiteCache:
             cursor = conn.execute("SELECT cache_key FROM api_cache")
 
         return [row[0] for row in cursor.fetchall()]
-

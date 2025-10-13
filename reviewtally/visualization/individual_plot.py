@@ -88,21 +88,23 @@ def plot_individual_pie_chart(
         for label, value in zip(labels, values)
     ]
     # Create pie chart
-    fig = go.Figure(data=[
-        go.Pie(
-            labels=labels,
-            values=values,
-            name=metric_display_name,
-            hoverinfo="label+value+percent",
-            text=custom_text,
-            textinfo="text",
-            direction="clockwise",
-            hovertemplate="<b>%{label}</b><br>"
-                         f"{metric_display_name}: %{{value}}<br>"
-                         "Percentage: %{percent}<br>"
-                         "<extra></extra>",
-        ),
-    ])
+    fig = go.Figure(
+        data=[
+            go.Pie(
+                labels=labels,
+                values=values,
+                name=metric_display_name,
+                hoverinfo="label+value+percent",
+                text=custom_text,
+                textinfo="text",
+                direction="clockwise",
+                hovertemplate="<b>%{label}</b><br>"
+                f"{metric_display_name}: %{{value}}<br>"
+                "Percentage: %{percent}<br>"
+                "<extra></extra>",
+            ),
+        ]
+    )
 
     # Update layout
     fig.update_layout(

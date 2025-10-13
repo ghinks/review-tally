@@ -188,7 +188,9 @@ def _check_pr_cache(
 
     for pull_number in pull_numbers:
         cached_pr_data = cache_manager.get_cached_pr_review(
-            owner, repo, pull_number,
+            owner,
+            repo,
+            pull_number,
         )
         if cached_pr_data is not None:
             cached_results.extend(cached_pr_data)
@@ -286,7 +288,10 @@ def _process_and_cache_reviews(
     if use_cache:
         for pull_number, reviews in pr_review_data.items():
             cache_manager.cache_per_review(
-                owner, repo, pull_number, reviews,
+                owner,
+                repo,
+                pull_number,
+                reviews,
             )
 
     return uncached_results
@@ -304,7 +309,10 @@ def get_reviewers_with_comments_for_pull_requests(
     if use_cache:
         # Check cache for each PR individually
         cached_results, uncached_prs = _check_pr_cache(
-            cache_manager, owner, repo, pull_numbers,
+            cache_manager,
+            owner,
+            repo,
+            pull_numbers,
         )
 
         # If all PRs are cached, return early
@@ -317,19 +325,28 @@ def get_reviewers_with_comments_for_pull_requests(
 
     # Fetch reviews and collect metadata
     review_data = _fetch_review_metadata(
-        owner, repo, uncached_prs,
+        owner,
+        repo,
+        uncached_prs,
     )
 
     # Process comments and cache results
     uncached_results = _process_and_cache_reviews(
-        cache_manager, owner, repo, review_data, use_cache=use_cache,
+        cache_manager,
+        owner,
+        repo,
+        review_data,
+        use_cache=use_cache,
     )
 
     # Cache empty results for PRs with no reviews (only if caching enabled)
     if not review_data and use_cache:
         for pull_number in uncached_prs:
             cache_manager.cache_per_review(
-                owner, repo, pull_number, [],
+                owner,
+                repo,
+                pull_number,
+                [],
             )
 
     # Combine cached and newly fetched results

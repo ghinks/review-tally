@@ -123,14 +123,10 @@ def generate_results_table(  # noqa: C901
     # Sort primarily by Reviews, then by Comments; missing or non-numeric -> 0
     def sort_key(row: list[Any]) -> tuple[int, int]:
         reviews = (
-            _safe_int(row[reviews_idx])
-            if 0 <= reviews_idx < len(row)
-            else 0
+            _safe_int(row[reviews_idx]) if 0 <= reviews_idx < len(row) else 0
         )
         comments = (
-            _safe_int(row[comments_idx])
-            if 0 <= comments_idx < len(row)
-            else 0
+            _safe_int(row[comments_idx]) if 0 <= comments_idx < len(row) else 0
         )
         return (reviews, comments)
 
