@@ -44,7 +44,9 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
             reviewer_stats={},
         )
 
-    @patch("reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests")
+    @patch(
+        "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests",
+    )
     @patch("builtins.print")
     def test_collect_review_data_handles_missing_submitted_at(
         self,
@@ -73,8 +75,10 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
         reviewer_missing_ts = self.context.reviewer_stats[
             "reviewer_missing_timestamp"
         ]
-        assert reviewer_missing_ts["reviews"] == \
-            self.NUM_COMMENTS - self.NUM_COMMENTS_WITH_TS
+        assert (
+            reviewer_missing_ts["reviews"]
+            == self.NUM_COMMENTS - self.NUM_COMMENTS_WITH_TS
+        )
 
         # Should have printed warning for missing timestamp
         mock_print.assert_called_with(
@@ -82,7 +86,9 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
             "reviewer_missing_timestamp on PR 12 (missing submitted_at)",
         )
 
-    @patch("reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests")
+    @patch(
+        "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests",
+    )
     @patch("builtins.print")
     def test_collect_review_data_sprint_aggregation_missing_submitted_at(
         self,
@@ -114,8 +120,9 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
         # Sprint stats should only include one review (the one with timestamp)
         assert sprint_data["total_reviews"] == self.NUM_COMMENTS_WITH_TS
         assert sprint_data["total_comments"] == self.NUM_COMMENTS
-        assert len(sprint_data["unique_reviewers"]) == \
-               self.NUM_COMMENTS_WITH_TS
+        assert (
+            len(sprint_data["unique_reviewers"]) == self.NUM_COMMENTS_WITH_TS
+        )
         assert "reviewer_with_timestamp" in sprint_data["unique_reviewers"]
         assert (
             "reviewer_missing_timestamp" not in sprint_data["unique_reviewers"]
@@ -166,8 +173,9 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
 
             # Assert
             # Both reviewers should be counted but no time data
-            assert len(self.context.reviewer_stats) == \
-                   len(reviewer_data_all_missing)
+            assert len(self.context.reviewer_stats) == len(
+                reviewer_data_all_missing,
+            )
 
             for reviewer in ["reviewer1", "reviewer2"]:
                 stats = self.context.reviewer_stats[reviewer]

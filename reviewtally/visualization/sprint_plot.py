@@ -32,8 +32,9 @@ def _validate_metrics(metrics: Iterable[str]) -> list[str]:
     return valid or ["total_reviews", "total_comments"]
 
 
-def _sorted_sprint_labels(team_metrics: dict[str, dict[str, Any]]) -> \
-        list[str]:
+def _sorted_sprint_labels(
+    team_metrics: dict[str, dict[str, Any]],
+) -> list[str]:
     # sprint labels are YYYY-MM-DD -> lexical sort is chronological
     return sorted(team_metrics.keys())
 
@@ -80,9 +81,9 @@ def plot_sprint_metrics(
         title=title,
         barmode="group" if chart_type == "bar" else None,
         xaxis={"title": "Sprint (Start Date)"},
-        yaxis={"title":"Value"},
-        legend={"orientation":"h", "y":-0.2},
-        margin={"l":60, "r":30, "t":60, "b":80},
+        yaxis={"title": "Value"},
+        legend={"orientation": "h", "y": -0.2},
+        margin={"l": 60, "r": 30, "t": 60, "b": 80},
         template="plotly_white",
     )
 
@@ -92,11 +93,12 @@ def plot_sprint_metrics(
     try:
         pio.renderers.default = "browser"
     except Exception as e:  # noqa: BLE001 pragma: no cover - fallback harmless
-        print(f"Failed to set default renderer: {e}") # noqa: T201
+        print(f"Failed to set default renderer: {e}")  # noqa: T201
 
     if save_path:
-        pio.write_html(fig, file=save_path,
-                       auto_open=False, include_plotlyjs="cdn")
+        pio.write_html(
+            fig, file=save_path, auto_open=False, include_plotlyjs="cdn",
+        )
         print(f"Saved sprint chart to {save_path}")  # noqa: T201
 
     fig.show()

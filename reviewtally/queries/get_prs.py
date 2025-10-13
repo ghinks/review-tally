@@ -30,6 +30,7 @@ ITEMS_PER_PAGE = 100
 RATE_LIMIT_REMAINING_THRESHOLD = 10  # arbitrary threshold
 RATE_LIMIT_SLEEP_SECONDS = 60  # seconds to sleep if rate limit is hit
 
+
 def backoff_if_ratelimited(headers: Mapping[str, str]) -> None:
     remaining = headers.get("X-RateLimit-Remaining")
     if remaining is None:
@@ -108,6 +109,7 @@ def _make_pr_request_with_retry(
     msg = "Failed to fetch pull requests after all retry attempts"
     raise RuntimeError(msg)
 
+
 def fetch_pull_requests_from_github(
     owner: str,
     repo: str,
@@ -152,6 +154,7 @@ def fetch_pull_requests_from_github(
             raise PaginationError(str(page))
     return pull_requests, reached_boundary
 
+
 def get_pull_requests_between_dates(
     owner: str,
     repo: str,
@@ -169,15 +172,20 @@ def get_pull_requests_between_dates(
             f"{end_date.strftime('%Y-%m-%d')})",
         )
         prs, _ = fetch_pull_requests_from_github(
-            owner, repo, start_date, end_date,
+            owner,
+            repo,
+            start_date,
+            end_date,
         )
         return prs
 
     # Get cached PRs and PR index
     cached_prs, pr_index = cache_manager.get_cached_prs_for_date_range(
-        owner, repo, start_date, end_date,
+        owner,
+        repo,
+        start_date,
+        end_date,
     )
-
 
     # Determine what additional data we need to fetch
     needs_backward = cache_manager.needs_backward_fetch(pr_index, start_date)
@@ -189,13 +197,21 @@ def get_pull_requests_between_dates(
     if needs_backward or needs_forward or not pr_index:
         # For now, do a full fetch - optimize later with incremental fetching
         newly_fetched_prs, reached_boundary = fetch_pull_requests_from_github(
-            owner, repo, start_date, end_date,
+            owner,
+            repo,
+            start_date,
+            end_date,
         )
 
         # Update PR index and cache individual PRs
         _update_pr_cache(
-            cache_manager, owner, repo, newly_fetched_prs, pr_index,
-            start_date=start_date, reached_boundary=reached_boundary,
+            cache_manager,
+            owner,
+            repo,
+            newly_fetched_prs,
+            pr_index,
+            start_date=start_date,
+            reached_boundary=reached_boundary,
         )
 
     # Combine cached and newly fetched PRs
@@ -228,11 +244,13 @@ def _update_pr_cache(  # noqa: PLR0913
         # Add new PRs to index
         for pr in new_prs:
             if pr["number"] not in existing_pr_numbers:
-                existing_prs.append({
-                    "number": pr["number"],
-                    "created_at": pr["created_at"],
-                    "state": pr.get("state", "unknown"),
-                })
+                existing_prs.append(
+                    {
+                        "number": pr["number"],
+                        "created_at": pr["created_at"],
+                        "state": pr.get("state", "unknown"),
+                    },
+                )
 
         # Update timestamps
         # Determine earliest_pr based on boundary information
@@ -250,7 +268,8 @@ def _update_pr_cache(  # noqa: PLR0913
             "last_updated": now,
             "earliest_pr": earliest_pr,
             "coverage_complete": existing_index.get(
-                "coverage_complete", False,
+                "coverage_complete",
+                False,
             ),
         }
     else:
@@ -262,8 +281,7 @@ def _update_pr_cache(  # noqa: PLR0913
         else:
             # Use actual earliest PR date or None if no PRs
             earliest_pr = (
-                min(pr["created_at"] for pr in new_prs)
-                if new_prs else None
+                min(pr["created_at"] for pr in new_prs) if new_prs else None
             )
 
         pr_index_data = {

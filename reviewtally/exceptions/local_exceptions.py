@@ -45,6 +45,7 @@ class MalformedDateError(ValueError):
             f"Malformed date: {date}. Please use the format YYYY-MM-DD",
         )
 
+
 class PaginationError(Exception):
     """Exception raised when pagination fails."""
 

@@ -58,8 +58,9 @@ def _handle_sprint_analysis(
     start_time: float,
 ) -> None:
     """Handle sprint analysis mode."""
-    sprint_periods = (
-        calculate_sprint_periods(args["start_date"], args["end_date"]))
+    sprint_periods = calculate_sprint_periods(
+        args["start_date"], args["end_date"],
+    )
     sprint_stats: dict[str, dict[str, Any]] = {}
 
     process_context = ProcessRepositoriesContext(
@@ -157,8 +158,7 @@ def _print_sprint_summary(team_metrics: dict[str, dict[str, Any]]) -> None:
         print(f"  Total Reviews: {sprint_metrics['total_reviews']}")  # noqa: T201
         print(f"  Total Comments: {sprint_metrics['total_comments']}")  # noqa: T201
         print(  # noqa: T201
-            "  Unique Reviewers: "
-            f"{sprint_metrics['unique_reviewers']}",
+            f"  Unique Reviewers: {sprint_metrics['unique_reviewers']}",
         )
         print(  # noqa: T201
             "  Avg Comments/Review: "

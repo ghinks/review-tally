@@ -24,7 +24,10 @@ class CacheManager:
     cache: SQLiteCache | None
 
     def __init__(
-        self, cache_dir: Path | None = None, *, enabled: bool = True,
+        self,
+        cache_dir: Path | None = None,
+        *,
+        enabled: bool = True,
     ) -> None:
         """
         Initialize cache manager.
@@ -60,7 +63,9 @@ class CacheManager:
             return None
 
         cache_key = gen_pr_review_key(
-            owner, repo, pull_number,
+            owner,
+            repo,
+            pull_number,
         )
         cached_data = self.cache.get(cache_key)
 
@@ -81,7 +86,9 @@ class CacheManager:
             return
 
         cache_key = gen_pr_review_key(
-            owner, repo, pull_number,
+            owner,
+            repo,
+            pull_number,
         )
 
         # Determine TTL based on PR state
@@ -222,7 +229,9 @@ class CacheManager:
             if start_date <= created_at <= end_date:
                 # Get full PR details from detail cache
                 full_pr = self.get_pr(
-                    owner, repo, pr_summary["number"],
+                    owner,
+                    repo,
+                    pr_summary["number"],
                 )
                 if full_pr:
                     cached_prs.append(full_pr)
@@ -270,6 +279,7 @@ class CacheManager:
         hours_since_update = (now - last_update_time).total_seconds() / 3600
 
         return hours_since_update > 1  # Refresh if older than 1 hour
+
 
 # Global cache manager instance
 _cache_manager: CacheManager | None = None
