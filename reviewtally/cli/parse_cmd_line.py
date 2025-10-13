@@ -36,7 +36,6 @@ def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
     print(f"Current version is {version}")  # noqa: T201
 
-
 def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     description = """Get pull requests for the organization between dates
     and the reviewers for each pull request. The environment must declare
@@ -47,6 +46,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     end_date_help = "End date in the format YYYY-MM-DD"
     language_selection = "Select the language to filter the pull requests"
     parser = argparse.ArgumentParser(description=description)
+    mut_exc_plot_group = parser.add_mutually_exclusive_group()
     # these arguments are required
     parser.add_argument("-o", "--org", required=False, help=org_help)
     date_format = "%Y-%m-%d"
@@ -107,7 +107,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
 
     # plotting options for sprint analysis
-    parser.add_argument(
+    mut_exc_plot_group.add_argument(
         "--plot-sprint",
         action="store_true",
         help=(
@@ -137,7 +137,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
 
     # plotting options for individual analysis
-    parser.add_argument(
+    mut_exc_plot_group.add_argument(
         "--plot-individual",
         action="store_true",
         help=(
