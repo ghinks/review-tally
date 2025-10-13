@@ -249,7 +249,7 @@ def _update_pr_cache(  # noqa: PLR0913
                         "number": pr["number"],
                         "created_at": pr["created_at"],
                         "state": pr.get("state", "unknown"),
-                    }
+                    },
                 )
 
         # Update timestamps

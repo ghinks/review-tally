@@ -59,7 +59,7 @@ def _handle_sprint_analysis(
 ) -> None:
     """Handle sprint analysis mode."""
     sprint_periods = calculate_sprint_periods(
-        args["start_date"], args["end_date"]
+        args["start_date"], args["end_date"],
     )
     sprint_stats: dict[str, dict[str, Any]] = {}
 

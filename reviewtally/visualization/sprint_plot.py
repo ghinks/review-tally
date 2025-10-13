@@ -97,7 +97,7 @@ def plot_sprint_metrics(
 
     if save_path:
         pio.write_html(
-            fig, file=save_path, auto_open=False, include_plotlyjs="cdn"
+            fig, file=save_path, auto_open=False, include_plotlyjs="cdn",
         )
         print(f"Saved sprint chart to {save_path}")  # noqa: T201
 

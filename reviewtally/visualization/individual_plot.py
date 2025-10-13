@@ -103,7 +103,7 @@ def plot_individual_pie_chart(
                 "Percentage: %{percent}<br>"
                 "<extra></extra>",
             ),
-        ]
+        ],
     )
 
     # Update layout

@@ -45,7 +45,7 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
         )
 
     @patch(
-        "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests"
+        "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests",
     )
     @patch("builtins.print")
     def test_collect_review_data_handles_missing_submitted_at(
@@ -87,7 +87,7 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
         )
 
     @patch(
-        "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests"
+        "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests",
     )
     @patch("builtins.print")
     def test_collect_review_data_sprint_aggregation_missing_submitted_at(
@@ -174,7 +174,7 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
             # Assert
             # Both reviewers should be counted but no time data
             assert len(self.context.reviewer_stats) == len(
-                reviewer_data_all_missing
+                reviewer_data_all_missing,
             )
 
             for reviewer in ["reviewer1", "reviewer2"]:
