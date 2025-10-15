@@ -17,12 +17,24 @@ review-tally -o expressjs -l javascript
 which would produce the following output
 
 ```shell
-user                   total
----------------------  --
-user1                  26
-user2                  18
-user3                  15
+User                                  Reviews    Comments    Avg Comments
+----------------------------------  ---------  ----------  --------------
+Phillip9587                                11           3             0.3
+bjohansebas                                 6           0             0
+UlisesGascon                                5           0             0
+tausiq2003                                  2           2             1
+copilot-pull-request-reviewer[bot]          2           1             0.5
+AkashDev01                                  1           2             2
+Cycloctane                                  1           1             1
+lululolily                                  1           1             1
+avivkeller                                  1           1             1
+ShubhamOulkar                               1           1             1
+SleepyStew                                  1           0             0
+shivarm                                     1           0             0
+LinusU                                      1           0             0
+
 ```
+
 This output shows the number of reviews that each user has carried out in the
 time period for the repositories that have python as a language specified.
 
@@ -30,6 +42,31 @@ A comma separated list of languages can be provided to filter the repositories
 that are included in the statistics. If no languages are provided then all of
 the repositories will be included in the statistics.
 
+```shell
+review-tally reviews,comments,avg-comments,\
+engagement,thoroughness,response-time,\
+completion-time,active-days -o expressjs
+```
+
+
+```shell
+User                                  Reviews    Comments    Avg Comments  Engagement    Thoroughness    Avg Response    Review Span      Active Days
+----------------------------------  ---------  ----------  --------------  ------------  --------------  --------------  -------------  -------------
+Phillip9587                                11           3             0.3  Low           6%              1.2d            1.2d                       2
+bjohansebas                                 6           0             0    Low           0%              1.8d            7.0d                       2
+UlisesGascon                                5           0             0    Low           0%              1.2d            7.0d                       5
+tausiq2003                                  2           2             1    Medium        25%             4.3d            0m                         1
+copilot-pull-request-reviewer[bot]          2           1             0.5  Medium        12%             3.7d            0m                         1
+AkashDev01                                  1           2             2    High          50%             4.2d            0h                         1
+Cycloctane                                  1           1             1    Medium        25%             19.4h           0h                         1
+lululolily                                  1           1             1    Medium        25%             19.8h           0h                         1
+avivkeller                                  1           1             1    Medium        25%             22.0h           0h                         1
+ShubhamOulkar                               1           1             1    Medium        25%             6.3d            0h                         1
+SleepyStew                                  1           0             0    Low           0%              43m             0h                         1
+shivarm                                     1           0             0    Low           0%              35m             0h                         1
+LinusU                                      1           0             0    Low           0%              4.9d            0h                         1
+
+```
 multiple languages:
 ```bash
 review-tally -o crossplane -l python,go
