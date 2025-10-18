@@ -10,7 +10,7 @@ from reviewtally.exceptions.local_exceptions import (
     HTTPErrorBadTokenError,
     NoGitHubOrgError,
 )
-from reviewtally.queries import GRAPHQL_TIMEOUT
+from reviewtally.queries import GRAPHQL_TIMEOUT, MAX_PR_COUNT
 
 # exceptions.py
 
@@ -37,6 +37,9 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
         repositories(first: 100) {
           nodes {
             name
+            pullRequests {
+              totalCount
+            }
             languages(first: 10) {
               nodes {
                 name
@@ -58,17 +61,30 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     data = response.json()
     if data["data"]["organization"] is None:
         raise NoGitHubOrgError(org)
-    # Filter repositories by language
-    return [
-        repo["name"]
-        for repo in data["data"]["organization"]["repositories"]["nodes"]
-        if not languages
-        or any(
+
+    # Filter repositories by language and PR count
+    filtered_repos = []
+    for repo in data["data"]["organization"]["repositories"]["nodes"]:
+        # Check language filter
+        if languages and not any(
             node["name"].lower()
             in [language.lower() for language in languages]
             for node in repo["languages"]["nodes"]
-        )
-    ]
+        ):
+            continue
+
+        # Check PR count threshold
+        pr_count = repo["pullRequests"]["totalCount"]
+        if pr_count > MAX_PR_COUNT:
+            print(  # noqa: T201
+                f"Warning: Skipping repository '{repo['name']}' "
+                f"with {pr_count} PRs (exceeds threshold of {MAX_PR_COUNT})",
+            )
+            continue
+
+        filtered_repos.append(repo["name"])
+
+    return filtered_repos
 
 
 def get_repos(
