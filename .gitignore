@@ -163,3 +163,4 @@ cython_debug/
 /reviewtally/queries/graphql.config.yml
 TODOS.md
 /claude-local.md
+/.mcp.json
