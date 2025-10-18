@@ -18,6 +18,9 @@ class TestGetReposByLanguage(unittest.TestCase):
                         "nodes": [
                             {
                                 "name": "repo1",
+                                "pullRequests": {
+                                    "totalCount": 150,
+                                },
                                 "languages": {
                                     "nodes": [
                                         {"name": "Python"},
@@ -27,6 +30,9 @@ class TestGetReposByLanguage(unittest.TestCase):
                             },
                             {
                                 "name": "repo2",
+                                "pullRequests": {
+                                    "totalCount": 75,
+                                },
                                 "languages": {
                                     "nodes": [
                                         {"name": "Java"},

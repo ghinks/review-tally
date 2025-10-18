@@ -41,3 +41,6 @@ CONNECTION_POOL_SIZE = 100        # Maximum connections in pool
 CONNECTION_POOL_SIZE_PER_HOST = 10  # Max connections per host (api.github.com)
 CONNECTION_KEEP_ALIVE = 300       # Keep connections alive for 5 minutes
 CONNECTION_ENABLE_CLEANUP = True  # Enable automatic connection cleanup
+
+# Repository filtering configuration
+MAX_PR_COUNT = 100000  # Skip repositories with more PRs than this threshold
