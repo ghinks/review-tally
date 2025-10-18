@@ -22,10 +22,10 @@ SSL_CONTEXT.minimum_version = ssl.TLSVersion.TLSv1_2  # Minimum TLS version
 SSL_CONTEXT.maximum_version = ssl.TLSVersion.TLSv1_3  # Maximum TLS version
 
 # Retry configuration for handling transient failures
-MAX_RETRIES = 3                    # Maximum number of retry attempts
+MAX_RETRIES = 10                  # Maximum number of retry attempts
 INITIAL_BACKOFF = 1.0             # Initial backoff delay in seconds
 BACKOFF_MULTIPLIER = 2.0          # Exponential backoff multiplier
-MAX_BACKOFF = 60.0                # Maximum backoff delay in seconds
+MAX_BACKOFF = 600.0               # Maximum backoff delay in seconds
 
 # HTTP status codes that should trigger retries
 RETRYABLE_STATUS_CODES = {
