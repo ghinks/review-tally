@@ -77,69 +77,146 @@ class SQLiteCache:
     def _init_database(self) -> None:
         """Initialize the cache database with required tables."""
         conn = self._get_connection()
+
+        # Drop old single-table schema if it exists
+        conn.execute("DROP TABLE IF EXISTS api_cache")
+        conn.execute("DROP INDEX IF EXISTS idx_expires_at")
+
+        # Create PR reviews cache table
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS api_cache (
-                cache_key TEXT PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS pr_reviews_cache (
+                owner TEXT NOT NULL,
+                repo TEXT NOT NULL,
+                pull_number INTEGER NOT NULL,
                 data TEXT NOT NULL,
                 cached_at INTEGER NOT NULL,
                 expires_at INTEGER,
-                content_hash TEXT,
-                metadata TEXT
+                review_count INTEGER,
+                pr_state TEXT,
+                PRIMARY KEY (owner, repo, pull_number)
             )
         """)
 
-        # Index for efficient TTL cleanup
         conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_expires_at
-            ON api_cache(expires_at)
+            CREATE INDEX IF NOT EXISTS idx_pr_reviews_expires_at
+            ON pr_reviews_cache(expires_at)
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pr_reviews_owner_repo
+            ON pr_reviews_cache(owner, repo)
+        """)
+
+        # Create PR metadata cache table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pr_metadata_cache (
+                owner TEXT NOT NULL,
+                repo TEXT NOT NULL,
+                pr_number INTEGER NOT NULL,
+                data TEXT NOT NULL,
+                cached_at INTEGER NOT NULL,
+                expires_at INTEGER,
+                pr_state TEXT,
+                created_at TEXT,
+                PRIMARY KEY (owner, repo, pr_number)
+            )
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pr_metadata_expires_at
+            ON pr_metadata_cache(expires_at)
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pr_metadata_owner_repo
+            ON pr_metadata_cache(owner, repo)
+        """)
+
+        # Create PR index cache table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pr_index_cache (
+                owner TEXT NOT NULL,
+                repo TEXT NOT NULL,
+                data TEXT NOT NULL,
+                cached_at INTEGER NOT NULL,
+                expires_at INTEGER,
+                pr_count INTEGER,
+                coverage_complete INTEGER,
+                PRIMARY KEY (owner, repo)
+            )
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pr_index_expires_at
+            ON pr_index_cache(expires_at)
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_pr_index_owner
+            ON pr_index_cache(owner)
         """)
 
         conn.commit()
 
-    def get(self, key: str) -> dict[str, Any] | None:
+    # PR Review cache methods
+
+    def get_pr_review(
+        self,
+        owner: str,
+        repo: str,
+        pull_number: int,
+    ) -> dict[str, Any] | None:
         """
-        Retrieve cached data if it exists and hasn't expired.
+        Retrieve cached PR review data if it exists and hasn't expired.
 
         Args:
-            key: Cache key to retrieve
+            owner: Repository owner
+            repo: Repository name
+            pull_number: Pull request number
 
         Returns:
-            Cached data dict or None if not found/expired
+            Cached PR review data or None if not found/expired
 
         """
         current_time = int(time.time())
-
         conn = self._get_connection()
+
         cursor = conn.execute(
             """
-            SELECT data, expires_at FROM api_cache
-            WHERE cache_key = ? AND (expires_at IS NULL OR expires_at > ?)
+            SELECT data FROM pr_reviews_cache
+            WHERE owner = ? AND repo = ? AND pull_number = ?
+            AND (expires_at IS NULL OR expires_at > ?)
         """,
-            (key, current_time),
+            (owner, repo, pull_number, current_time),
         )
 
         result = cursor.fetchone()
         if result:
-            data_json, _expires_at = result
-            return json.loads(data_json)
+            return json.loads(result[0])
 
         return None
 
-    def set(
+    def set_pr_review(  # noqa: PLR0913
         self,
-        key: str,
+        owner: str,
+        repo: str,
+        pull_number: int,
         data: dict[str, Any],
         ttl_hours: int | None = None,
-        metadata: dict[str, Any] | None = None,
+        pr_state: str | None = None,
+        review_count: int | None = None,
     ) -> None:
         """
-        Store data in cache with optional TTL.
+        Store PR review data in cache.
 
         Args:
-            key: Cache key
-            data: Data to cache
+            owner: Repository owner
+            repo: Repository name
+            pull_number: Pull request number
+            data: Review data to cache
             ttl_hours: Time to live in hours. None means never expire
-            metadata: Optional metadata to store with the cache entry
+            pr_state: PR state (open/closed)
+            review_count: Number of reviews
 
         """
         current_time = int(time.time())
@@ -148,44 +225,286 @@ class SQLiteCache:
             expires_at = current_time + (ttl_hours * 3600)
 
         data_json = json.dumps(data, sort_keys=True)
-        content_hash = str(hash(data_json))
-        metadata_json = json.dumps(metadata) if metadata else None
-
         conn = self._get_connection()
+
         conn.execute(
             """
-            INSERT OR REPLACE INTO api_cache
-            (cache_key, data, cached_at, expires_at, content_hash,
-             metadata)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO pr_reviews_cache
+            (owner, repo, pull_number, data, cached_at, expires_at,
+             review_count, pr_state)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
-                key,
+                owner,
+                repo,
+                pull_number,
                 data_json,
                 current_time,
                 expires_at,
-                content_hash,
-                metadata_json,
+                review_count,
+                pr_state,
             ),
         )
 
         conn.commit()
 
-    def delete(self, key: str) -> bool:
+    def delete_pr_review(
+        self,
+        owner: str,
+        repo: str,
+        pull_number: int,
+    ) -> bool:
         """
-        Delete a specific cache entry.
+        Delete a PR review cache entry.
 
         Args:
-            key: Cache key to delete
+            owner: Repository owner
+            repo: Repository name
+            pull_number: Pull request number
 
         Returns:
             True if entry was deleted, False if not found
 
         """
         conn = self._get_connection()
+
         cursor = conn.execute(
-            "DELETE FROM api_cache WHERE cache_key = ?",
-            (key,),
+            """
+            DELETE FROM pr_reviews_cache
+            WHERE owner = ? AND repo = ? AND pull_number = ?
+        """,
+            (owner, repo, pull_number),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+    # PR Metadata cache methods
+
+    def get_pr_metadata(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int,
+    ) -> dict[str, Any] | None:
+        """
+        Retrieve cached PR metadata if it exists and hasn't expired.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            pr_number: Pull request number
+
+        Returns:
+            Cached PR metadata or None if not found/expired
+
+        """
+        current_time = int(time.time())
+        conn = self._get_connection()
+
+        cursor = conn.execute(
+            """
+            SELECT data FROM pr_metadata_cache
+            WHERE owner = ? AND repo = ? AND pr_number = ?
+            AND (expires_at IS NULL OR expires_at > ?)
+        """,
+            (owner, repo, pr_number, current_time),
+        )
+
+        result = cursor.fetchone()
+        if result:
+            return json.loads(result[0])
+
+        return None
+
+    def set_pr_metadata(  # noqa: PLR0913
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int,
+        data: dict[str, Any],
+        ttl_hours: int | None = None,
+        pr_state: str | None = None,
+        created_at: str | None = None,
+    ) -> None:
+        """
+        Store PR metadata in cache.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            pr_number: Pull request number
+            data: PR metadata to cache
+            ttl_hours: Time to live in hours. None means never expire
+            pr_state: PR state (open/closed)
+            created_at: PR creation timestamp
+
+        """
+        current_time = int(time.time())
+        expires_at = None
+        if ttl_hours is not None:
+            expires_at = current_time + (ttl_hours * 3600)
+
+        data_json = json.dumps(data, sort_keys=True)
+        conn = self._get_connection()
+
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO pr_metadata_cache
+            (owner, repo, pr_number, data, cached_at, expires_at,
+             pr_state, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+            (
+                owner,
+                repo,
+                pr_number,
+                data_json,
+                current_time,
+                expires_at,
+                pr_state,
+                created_at,
+            ),
+        )
+
+        conn.commit()
+
+    def delete_pr_metadata(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int,
+    ) -> bool:
+        """
+        Delete a PR metadata cache entry.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            pr_number: Pull request number
+
+        Returns:
+            True if entry was deleted, False if not found
+
+        """
+        conn = self._get_connection()
+
+        cursor = conn.execute(
+            """
+            DELETE FROM pr_metadata_cache
+            WHERE owner = ? AND repo = ? AND pr_number = ?
+        """,
+            (owner, repo, pr_number),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+    # PR Index cache methods
+
+    def get_pr_index(
+        self,
+        owner: str,
+        repo: str,
+    ) -> dict[str, Any] | None:
+        """
+        Retrieve cached PR index data if it exists and hasn't expired.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+
+        Returns:
+            Cached PR index data or None if not found/expired
+
+        """
+        current_time = int(time.time())
+        conn = self._get_connection()
+
+        cursor = conn.execute(
+            """
+            SELECT data FROM pr_index_cache
+            WHERE owner = ? AND repo = ?
+            AND (expires_at IS NULL OR expires_at > ?)
+        """,
+            (owner, repo, current_time),
+        )
+
+        result = cursor.fetchone()
+        if result:
+            return json.loads(result[0])
+
+        return None
+
+    def set_pr_index(  # noqa: PLR0913
+        self,
+        owner: str,
+        repo: str,
+        data: dict[str, Any],
+        ttl_hours: int | None = None,
+        pr_count: int | None = None,
+        *,
+        coverage_complete: bool = False,
+    ) -> None:
+        """
+        Store PR index data in cache.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            data: PR index data to cache
+            ttl_hours: Time to live in hours. None means never expire
+            pr_count: Number of PRs in the index
+            coverage_complete: Whether index coverage is complete
+
+        """
+        current_time = int(time.time())
+        expires_at = None
+        if ttl_hours is not None:
+            expires_at = current_time + (ttl_hours * 3600)
+
+        data_json = json.dumps(data, sort_keys=True)
+        conn = self._get_connection()
+
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO pr_index_cache
+            (owner, repo, data, cached_at, expires_at, pr_count,
+             coverage_complete)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+            (
+                owner,
+                repo,
+                data_json,
+                current_time,
+                expires_at,
+                pr_count,
+                1 if coverage_complete else 0,
+            ),
+        )
+
+        conn.commit()
+
+    def delete_pr_index(
+        self,
+        owner: str,
+        repo: str,
+    ) -> bool:
+        """
+        Delete a PR index cache entry.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+
+        Returns:
+            True if entry was deleted, False if not found
+
+        """
+        conn = self._get_connection()
+
+        cursor = conn.execute(
+            "DELETE FROM pr_index_cache WHERE owner = ? AND repo = ?",
+            (owner, repo),
         )
         conn.commit()
         return cursor.rowcount > 0
@@ -199,17 +518,28 @@ class SQLiteCache:
 
         """
         current_time = int(time.time())
-
         conn = self._get_connection()
-        cursor = conn.execute(
-            """
-            DELETE FROM api_cache
-            WHERE expires_at IS NOT NULL AND expires_at <= ?
-        """,
-            (current_time,),
-        )
+
+        total_removed = 0
+
+        # Clean each table
+        for table_name in [
+            "pr_reviews_cache",
+            "pr_metadata_cache",
+            "pr_index_cache",
+        ]:
+            # Table names are hardcoded constants, safe from injection
+            cursor = conn.execute(
+                f"""
+                DELETE FROM {table_name}
+                WHERE expires_at IS NOT NULL AND expires_at <= ?
+            """,  # noqa: S608
+                (current_time,),
+            )
+            total_removed += cursor.rowcount
+
         conn.commit()
-        return cursor.rowcount
+        return total_removed
 
     def clear_all(self) -> int:
         """
@@ -220,9 +550,21 @@ class SQLiteCache:
 
         """
         conn = self._get_connection()
-        cursor = conn.execute("DELETE FROM api_cache")
+
+        total_removed = 0
+
+        # Clear each table
+        for table_name in [
+            "pr_reviews_cache",
+            "pr_metadata_cache",
+            "pr_index_cache",
+        ]:
+            # Table names are hardcoded constants, safe from injection
+            cursor = conn.execute(f"DELETE FROM {table_name}")  # noqa: S608
+            total_removed += cursor.rowcount
+
         conn.commit()
-        return cursor.rowcount
+        return total_removed
 
     def get_stats(self) -> dict[str, Any]:
         """
@@ -233,27 +575,50 @@ class SQLiteCache:
 
         """
         current_time = int(time.time())
-
         conn = self._get_connection()
-        # Total entries
-        total_cursor = conn.execute("SELECT COUNT(*) FROM api_cache")
-        total_entries = total_cursor.fetchone()[0]
 
-        # Expired entries
-        expired_cursor = conn.execute(
-            """
-            SELECT COUNT(*) FROM api_cache
-            WHERE expires_at IS NOT NULL AND expires_at <= ?
-        """,
-            (current_time,),
-        )
-        expired_entries = expired_cursor.fetchone()[0]
+        total_entries = 0
+        expired_entries = 0
+        cache_size_bytes = 0
+        stats_by_table = {}
 
-        # Cache size
-        size_cursor = conn.execute(
-            "SELECT SUM(LENGTH(data)) FROM api_cache",
-        )
-        cache_size_bytes = size_cursor.fetchone()[0] or 0
+        # Aggregate stats across all tables
+        for table_name, key_prefix in [
+            ("pr_reviews_cache", "pr_reviews"),
+            ("pr_metadata_cache", "pr_metadata"),
+            ("pr_index_cache", "pr_index"),
+        ]:
+            # Total entries per table (table names are hardcoded constants)
+            total_cursor = conn.execute(
+                f"SELECT COUNT(*) FROM {table_name}",  # noqa: S608
+            )
+            table_total = total_cursor.fetchone()[0]
+            total_entries += table_total
+
+            # Expired entries per table
+            expired_cursor = conn.execute(
+                f"""
+                SELECT COUNT(*) FROM {table_name}
+                WHERE expires_at IS NOT NULL AND expires_at <= ?
+            """,  # noqa: S608
+                (current_time,),
+            )
+            table_expired = expired_cursor.fetchone()[0]
+            expired_entries += table_expired
+
+            # Cache size per table
+            size_cursor = conn.execute(
+                f"SELECT SUM(LENGTH(data)) FROM {table_name}",  # noqa: S608
+            )
+            table_size = size_cursor.fetchone()[0] or 0
+            cache_size_bytes += table_size
+
+            stats_by_table[key_prefix] = {
+                "total": table_total,
+                "expired": table_expired,
+                "valid": table_total - table_expired,
+                "size_bytes": table_size,
+            }
 
         # Database file size
         db_size_bytes = (
@@ -269,26 +634,5 @@ class SQLiteCache:
             "db_size_bytes": db_size_bytes,
             "db_size_mb": round(db_size_bytes / (1024 * 1024), 2),
             "db_path": str(self.db_path),
+            "by_table": stats_by_table,
         }
-
-    def list_keys(self, pattern: str | None = None) -> list[str]:
-        """
-        List cache keys, optionally filtered by pattern.
-
-        Args:
-            pattern: SQL LIKE pattern to filter keys
-
-        Returns:
-            List of matching cache keys
-
-        """
-        conn = self._get_connection()
-        if pattern:
-            cursor = conn.execute(
-                "SELECT cache_key FROM api_cache WHERE cache_key LIKE ?",
-                (pattern,),
-            )
-        else:
-            cursor = conn.execute("SELECT cache_key FROM api_cache")
-
-        return [row[0] for row in cursor.fetchall()]
