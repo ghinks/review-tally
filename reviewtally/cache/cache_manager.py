@@ -7,11 +7,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from reviewtally.cache import MODERATE_THRESHOLD_DAYS, RECENT_THRESHOLD_DAYS
-from reviewtally.cache.cache_keys import (
-    gen_pr_key,
-    gen_pr_list_metadata_key,
-    gen_pr_review_key,
-)
 from reviewtally.cache.sqlite_cache import SQLiteCache
 
 if TYPE_CHECKING:
@@ -62,12 +57,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = gen_pr_review_key(
-            owner,
-            repo,
-            pull_number,
-        )
-        cached_data = self.cache.get(cache_key)
+        cached_data = self.cache.get_pr_review(owner, repo, pull_number)
 
         if cached_data:
             return cached_data.get("reviews", [])
@@ -85,30 +75,19 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return
 
-        cache_key = gen_pr_review_key(
-            owner,
-            repo,
-            pull_number,
-        )
-
         # Determine TTL based on PR state
         ttl_hours = None  # Never expire by default
         if pr_state == "open":
             ttl_hours = 1  # Short TTL for open PRs
 
-        metadata = {
-            "owner": owner,
-            "repo": repo,
-            "pull_number": pull_number,
-            "review_count": len(reviews_data),
-            "pr_state": pr_state,
-        }
-
-        self.cache.set(
-            cache_key,
+        self.cache.set_pr_review(
+            owner,
+            repo,
+            pull_number,
             {"reviews": reviews_data},
             ttl_hours=ttl_hours,
-            metadata=metadata,
+            pr_state=pr_state,
+            review_count=len(reviews_data),
         )
 
     def _calculate_pr_ttl(self, pr_created_at: str) -> int | None:
@@ -133,8 +112,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = gen_pr_key(owner, repo, pr_number)
-        return self.cache.get(cache_key)
+        return self.cache.get_pr_metadata(owner, repo, pr_number)
 
     def cache_pr(
         self,
@@ -146,24 +124,18 @@ class CacheManager:
             return
 
         pr_number = pr_data["number"]
-        cache_key = gen_pr_key(owner, repo, pr_number)
 
         # Calculate TTL based on PR creation date
         ttl_hours = self._calculate_pr_ttl(pr_data["created_at"])
 
-        metadata = {
-            "owner": owner,
-            "repo": repo,
-            "pr_number": pr_number,
-            "pr_state": pr_data.get("state"),
-            "created_at": pr_data["created_at"],
-        }
-
-        self.cache.set(
-            cache_key,
+        self.cache.set_pr_metadata(
+            owner,
+            repo,
+            pr_number,
             pr_data,
             ttl_hours=ttl_hours,
-            metadata=metadata,
+            pr_state=pr_data.get("state"),
+            created_at=pr_data["created_at"],
         )
 
     def get_pr_list(
@@ -174,8 +146,7 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return None
 
-        cache_key = gen_pr_list_metadata_key(owner, repo)
-        return self.cache.get(cache_key)
+        return self.cache.get_pr_index(owner, repo)
 
     def set_pr_list(
         self,
@@ -186,23 +157,16 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return
 
-        cache_key = gen_pr_list_metadata_key(owner, repo)
-
         # PR index has moderate TTL - needs regular updates for active repos
         ttl_hours = 6  # 6 hours for PR index
 
-        metadata = {
-            "owner": owner,
-            "repo": repo,
-            "pr_count": len(pr_index_data.get("prs", [])),
-            "coverage_complete": pr_index_data.get("coverage_complete", False),
-        }
-
-        self.cache.set(
-            cache_key,
+        self.cache.set_pr_index(
+            owner,
+            repo,
             pr_index_data,
             ttl_hours=ttl_hours,
-            metadata=metadata,
+            pr_count=len(pr_index_data.get("prs", [])),
+            coverage_complete=pr_index_data.get("coverage_complete", False),
         )
 
     def get_cached_prs_for_date_range(
