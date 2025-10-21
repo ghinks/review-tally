@@ -70,8 +70,12 @@ def _make_pr_request_with_retry(
     url: str,
     headers: dict[str, str],
     params: dict[str, Any],
-) -> list[dict]:
-    """Make a single PR request with retry logic."""
+) -> dict[str, Any] | list[dict]:
+    """
+    Make a single PR request with retry logic.
+
+    Returns dict for search API responses, list for direct PR endpoints.
+    """
     for attempt in range(MAX_RETRIES + 1):
         try:
             response = requests.get(
@@ -116,42 +120,51 @@ def fetch_pull_requests_from_github(
     start_date: datetime,
     end_date: datetime,
 ) -> tuple[list[dict], bool]:
-    url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
+    # Use GitHub Search Issues API for native date filtering
+    url = "https://api.github.com/search/issues"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-    params: dict[str, Any] = {
-        "state": "all",
-        "sort": "created_at",
-        "direction": "desc",
-        "per_page": ITEMS_PER_PAGE,
-    }
+
+    # Build search query with date range
+    # Format: repo:owner/repo is:pr created:YYYY-MM-DD..YYYY-MM-DD
+    query = (
+        f"repo:{owner}/{repo} is:pr "
+        f"created:{start_date.strftime('%Y-%m-%d')}.."
+        f"{end_date.strftime('%Y-%m-%d')}"
+    )
+
     pull_requests = []
     page = 1
-    reached_boundary = False
+    reached_boundary = True  # Search API always returns complete results
 
     while True:
-        params = {**params, "page": page}
-        prs = _make_pr_request_with_retry(url, headers, params)
+        params: dict[str, Any] = {
+            "q": query,
+            "sort": "created",
+            "order": "desc",
+            "per_page": ITEMS_PER_PAGE,
+            "page": page,
+        }
+
+        response_data = _make_pr_request_with_retry(url, headers, params)
+        # Search API returns {"items": [...]} instead of direct array
+        if isinstance(response_data, dict):
+            prs = response_data.get("items", [])
+        else:
+            prs = []  # Unexpected format, skip this page
+
         if not prs:
             break
 
-        latest_created_at = None
-        for pr in prs:
-            created_at = (
-                datetime.strptime(pr["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-            ).replace(tzinfo=timezone.utc)
-            if start_date <= created_at <= end_date:
-                pull_requests.append(pr)
-            latest_created_at = created_at
+        # No need for client-side date filtering - API handles it
+        pull_requests.extend(prs)
 
         page += 1
-        if latest_created_at and latest_created_at < start_date:
-            reached_boundary = True
-            break
         if page > MAX_NUM_PAGES:
             raise PaginationError(str(page))
+
     return pull_requests, reached_boundary
 
 
