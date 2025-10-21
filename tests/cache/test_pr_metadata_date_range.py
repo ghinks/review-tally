@@ -24,9 +24,12 @@ def temp_cache_dir() -> Generator[Path, None, None]:
 
 
 @pytest.fixture
-def cache_manager(temp_cache_dir: Path) -> SQLiteCache:
+def cache_manager(temp_cache_dir: Path) -> Generator[SQLiteCache, None, None]:
     """Create a SQLiteCache directly to bypass test environment checks."""
-    return SQLiteCache(cache_dir=temp_cache_dir)
+    cache = SQLiteCache(cache_dir=temp_cache_dir)
+    yield cache
+    # Explicitly close the database connection for Windows compatibility
+    cache.close()
 
 
 def test_get_pr_metadata_date_range_empty(
