@@ -244,6 +244,27 @@ class CacheManager:
 
         return hours_since_update > 1  # Refresh if older than 1 hour
 
+    def get_cached_date_range(
+        self,
+        owner: str,
+        repo: str,
+    ) -> dict[str, Any] | None:
+        """
+        Get the date range of currently cached PR metadata for a repository.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+
+        Returns:
+            Dict with min_date, max_date, and count or None if no cached data
+
+        """
+        if not self.enabled or not self.cache:
+            return None
+
+        return self.cache.get_pr_metadata_date_range(owner, repo)
+
 
 # Global cache manager instance
 _cache_manager: CacheManager | None = None

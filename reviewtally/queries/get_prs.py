@@ -200,6 +200,9 @@ def get_pull_requests_between_dates(
         end_date,
     )
 
+    # Get cached date range information from pr_metadata table
+    cached_date_range = cache_manager.get_cached_date_range(owner, repo)
+
     # Determine what additional data we need to fetch
     needs_backward = cache_manager.needs_backward_fetch(pr_index, start_date)
     needs_forward = cache_manager.needs_forward_fetch(pr_index)
@@ -208,24 +211,68 @@ def get_pull_requests_between_dates(
     reached_boundary = False
 
     if needs_backward or needs_forward or not pr_index:
-        # For now, do a full fetch - optimize later with incremental fetching
-        newly_fetched_prs, reached_boundary = fetch_pull_requests_from_github(
-            owner,
-            repo,
-            start_date,
-            end_date,
-        )
+        # Optimize: Use cached date range to fetch only gaps
+        if cached_date_range and cached_prs:
+            # We have cached data - fetch only what's missing
+            cached_min = datetime.fromisoformat(
+                cached_date_range["min_date"].replace("Z", "+00:00"),
+            )
+            cached_max = datetime.fromisoformat(
+                cached_date_range["max_date"].replace("Z", "+00:00"),
+            )
+
+            # Fetch backward if requested start is before cached data
+            if needs_backward and start_date < cached_min:
+                print(  # noqa: T201
+                    f"Backward fetch: {start_date.date()} to "
+                    f"{cached_min.date()}",
+                )
+                backward_prs, boundary = fetch_pull_requests_from_github(
+                    owner,
+                    repo,
+                    start_date,
+                    cached_min,
+                )
+                newly_fetched_prs.extend(backward_prs)
+                reached_boundary = reached_boundary or boundary
+
+            # Fetch forward if needed and end is after cached data
+            if needs_forward and end_date > cached_max:
+                print(  # noqa: T201
+                    f"Forward fetch: {cached_max.date()} to "
+                    f"{end_date.date()}",
+                )
+                forward_prs, boundary = fetch_pull_requests_from_github(
+                    owner,
+                    repo,
+                    cached_max,
+                    end_date,
+                )
+                newly_fetched_prs.extend(forward_prs)
+                reached_boundary = reached_boundary or boundary
+        else:
+            # No cached data - do full fetch
+            (
+                newly_fetched_prs,
+                reached_boundary,
+            ) = fetch_pull_requests_from_github(
+                owner,
+                repo,
+                start_date,
+                end_date,
+            )
 
         # Update PR index and cache individual PRs
-        _update_pr_cache(
-            cache_manager,
-            owner,
-            repo,
-            newly_fetched_prs,
-            pr_index,
-            start_date=start_date,
-            reached_boundary=reached_boundary,
-        )
+        if newly_fetched_prs:
+            _update_pr_cache(
+                cache_manager,
+                owner,
+                repo,
+                newly_fetched_prs,
+                pr_index,
+                start_date=start_date,
+                reached_boundary=reached_boundary,
+            )
 
     # Combine cached and newly fetched PRs
     return _combine_pr_results(cached_prs, newly_fetched_prs)

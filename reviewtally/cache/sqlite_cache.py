@@ -398,6 +398,49 @@ class SQLiteCache:
         conn.commit()
         return cursor.rowcount > 0
 
+    def get_pr_metadata_date_range(
+        self,
+        owner: str,
+        repo: str,
+    ) -> dict[str, Any] | None:
+        """
+        Get the date range of cached PR metadata for a repository.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+
+        Returns:
+            Dictionary with min_date, max_date, and count, or None if no data
+
+        """
+        current_time = int(time.time())
+        conn = self._get_connection()
+
+        cursor = conn.execute(
+            """
+            SELECT
+                MIN(created_at) as min_date,
+                MAX(created_at) as max_date,
+                COUNT(*) as pr_count
+            FROM pr_metadata_cache
+            WHERE owner = ? AND repo = ?
+            AND (expires_at IS NULL OR expires_at > ?)
+            AND created_at IS NOT NULL
+        """,
+            (owner, repo, current_time),
+        )
+
+        result = cursor.fetchone()
+        if result and result[0] is not None:
+            return {
+                "min_date": result[0],
+                "max_date": result[1],
+                "count": result[2],
+            }
+
+        return None
+
     # PR Index cache methods
 
     def get_pr_index(
