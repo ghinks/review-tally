@@ -132,30 +132,6 @@ class SQLiteCache:
             ON pr_metadata_cache(owner, repo)
         """)
 
-        # Create PR index cache table
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS pr_index_cache (
-                owner TEXT NOT NULL,
-                repo TEXT NOT NULL,
-                data TEXT NOT NULL,
-                cached_at INTEGER NOT NULL,
-                expires_at INTEGER,
-                pr_count INTEGER,
-                coverage_complete INTEGER,
-                PRIMARY KEY (owner, repo)
-            )
-        """)
-
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_pr_index_expires_at
-            ON pr_index_cache(expires_at)
-        """)
-
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_pr_index_owner
-            ON pr_index_cache(owner)
-        """)
-
         conn.commit()
 
     # PR Review cache methods
@@ -441,22 +417,61 @@ class SQLiteCache:
 
         return None
 
-    # PR Index cache methods
+    def get_pr_summaries(
+        self,
+        owner: str,
+        repo: str,
+    ) -> list[dict[str, Any]]:
+        """
+        Get lightweight PR summaries from pr_metadata_cache.
 
-    def get_pr_index(
+        Args:
+            owner: Repository owner
+            repo: Repository name
+
+        Returns:
+            List of PR summaries with number, created_at, and state
+
+        """
+        current_time = int(time.time())
+        conn = self._get_connection()
+
+        cursor = conn.execute(
+            """
+            SELECT pr_number, created_at, pr_state
+            FROM pr_metadata_cache
+            WHERE owner = ? AND repo = ?
+            AND (expires_at IS NULL OR expires_at > ?)
+            AND created_at IS NOT NULL
+            ORDER BY created_at DESC
+        """,
+            (owner, repo, current_time),
+        )
+
+        results = cursor.fetchall()
+        return [
+            {
+                "number": row[0],
+                "created_at": row[1],
+                "state": row[2] or "unknown",
+            }
+            for row in results
+        ]
+
+    def get_pr_metadata_stats(
         self,
         owner: str,
         repo: str,
     ) -> dict[str, Any] | None:
         """
-        Retrieve cached PR index data if it exists and hasn't expired.
+        Get cache statistics for a repository's PR metadata.
 
         Args:
             owner: Repository owner
             repo: Repository name
 
         Returns:
-            Cached PR index data or None if not found/expired
+            Dict with earliest_pr, last_updated, and pr_count or None
 
         """
         current_time = int(time.time())
@@ -464,93 +479,28 @@ class SQLiteCache:
 
         cursor = conn.execute(
             """
-            SELECT data FROM pr_index_cache
+            SELECT
+                MIN(created_at) as earliest_pr,
+                MAX(cached_at) as last_updated,
+                COUNT(*) as pr_count
+            FROM pr_metadata_cache
             WHERE owner = ? AND repo = ?
             AND (expires_at IS NULL OR expires_at > ?)
+            AND created_at IS NOT NULL
         """,
             (owner, repo, current_time),
         )
 
         result = cursor.fetchone()
-        if result:
-            return json.loads(result[0])
+        if result and result[0] is not None:
+            return {
+                "earliest_pr": result[0],
+                "last_updated": result[1],
+                "pr_count": result[2],
+            }
 
         return None
 
-    def set_pr_index(  # noqa: PLR0913
-        self,
-        owner: str,
-        repo: str,
-        data: dict[str, Any],
-        ttl_hours: int | None = None,
-        pr_count: int | None = None,
-        *,
-        coverage_complete: bool = False,
-    ) -> None:
-        """
-        Store PR index data in cache.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            data: PR index data to cache
-            ttl_hours: Time to live in hours. None means never expire
-            pr_count: Number of PRs in the index
-            coverage_complete: Whether index coverage is complete
-
-        """
-        current_time = int(time.time())
-        expires_at = None
-        if ttl_hours is not None:
-            expires_at = current_time + (ttl_hours * 3600)
-
-        data_json = json.dumps(data, sort_keys=True)
-        conn = self._get_connection()
-
-        conn.execute(
-            """
-            INSERT OR REPLACE INTO pr_index_cache
-            (owner, repo, data, cached_at, expires_at, pr_count,
-             coverage_complete)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-            (
-                owner,
-                repo,
-                data_json,
-                current_time,
-                expires_at,
-                pr_count,
-                1 if coverage_complete else 0,
-            ),
-        )
-
-        conn.commit()
-
-    def delete_pr_index(
-        self,
-        owner: str,
-        repo: str,
-    ) -> bool:
-        """
-        Delete a PR index cache entry.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-
-        Returns:
-            True if entry was deleted, False if not found
-
-        """
-        conn = self._get_connection()
-
-        cursor = conn.execute(
-            "DELETE FROM pr_index_cache WHERE owner = ? AND repo = ?",
-            (owner, repo),
-        )
-        conn.commit()
-        return cursor.rowcount > 0
 
     def cleanup_expired(self) -> int:
         """
@@ -569,7 +519,6 @@ class SQLiteCache:
         for table_name in [
             "pr_reviews_cache",
             "pr_metadata_cache",
-            "pr_index_cache",
         ]:
             # Table names are hardcoded constants, safe from injection
             cursor = conn.execute(
@@ -600,7 +549,6 @@ class SQLiteCache:
         for table_name in [
             "pr_reviews_cache",
             "pr_metadata_cache",
-            "pr_index_cache",
         ]:
             # Table names are hardcoded constants, safe from injection
             cursor = conn.execute(f"DELETE FROM {table_name}")  # noqa: S608
@@ -629,7 +577,6 @@ class SQLiteCache:
         for table_name, key_prefix in [
             ("pr_reviews_cache", "pr_reviews"),
             ("pr_metadata_cache", "pr_metadata"),
-            ("pr_index_cache", "pr_index"),
         ]:
             # Total entries per table (table names are hardcoded constants)
             total_cursor = conn.execute(
