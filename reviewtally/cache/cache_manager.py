@@ -138,17 +138,6 @@ class CacheManager:
             created_at=pr_data["created_at"],
         )
 
-    def get_pr_summary_list(
-        self,
-        owner: str,
-        repo: str,
-    ) -> list[dict[str, Any]]:
-        """Get lightweight PR summaries from pr_metadata_cache."""
-        if not self.enabled or not self.cache:
-            return []
-
-        return self.cache.get_pr_summaries(owner, repo)
-
     def get_pr_stats(
         self,
         owner: str,
@@ -171,7 +160,7 @@ class CacheManager:
             return [], None
 
         # Get PR summaries from pr_metadata_cache
-        pr_summaries = self.get_pr_summary_list(owner, repo)
+        pr_summaries = self.cache.get_pr_summaries(owner, repo)
         if not pr_summaries:
             return [], None
 
