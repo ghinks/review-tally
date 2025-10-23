@@ -30,6 +30,9 @@ class CommandLineArgs(TypedDict):
     plot_individual: bool
     individual_chart_metric: str
     use_cache: bool
+    clear_cache: bool
+    clear_expired_cache: bool
+    show_cache_stats: bool
 
 
 def print_toml_version() -> None:
@@ -164,6 +167,21 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         action="store_true",
         help="Disable PR review caching (always fetch fresh data from API)",
     )
+    parser.add_argument(
+        "--clear-cache",
+        action="store_true",
+        help="Clear all cached data and exit",
+    )
+    parser.add_argument(
+        "--clear-expired-cache",
+        action="store_true",
+        help="Clear only expired cached data and exit",
+    )
+    parser.add_argument(
+        "--cache-stats",
+        action="store_true",
+        help="Show cache statistics and exit",
+    )
 
     args = parser.parse_args()
     # catch ValueError if the date format is not correct
@@ -236,4 +254,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         plot_individual=args.plot_individual,
         individual_chart_metric=args.individual_chart_metric,
         use_cache=not args.no_cache,
+        clear_cache=args.clear_cache,
+        clear_expired_cache=args.clear_expired_cache,
+        show_cache_stats=args.cache_stats,
     )

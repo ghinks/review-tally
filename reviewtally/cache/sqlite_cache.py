@@ -224,36 +224,6 @@ class SQLiteCache:
 
         conn.commit()
 
-    def delete_pr_review(
-        self,
-        owner: str,
-        repo: str,
-        pull_number: int,
-    ) -> bool:
-        """
-        Delete a PR review cache entry.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            pull_number: Pull request number
-
-        Returns:
-            True if entry was deleted, False if not found
-
-        """
-        conn = self._get_connection()
-
-        cursor = conn.execute(
-            """
-            DELETE FROM pr_reviews_cache
-            WHERE owner = ? AND repo = ? AND pull_number = ?
-        """,
-            (owner, repo, pull_number),
-        )
-        conn.commit()
-        return cursor.rowcount > 0
-
     # PR Metadata cache methods
 
     def get_pr_metadata(
@@ -343,36 +313,6 @@ class SQLiteCache:
         )
 
         conn.commit()
-
-    def delete_pr_metadata(
-        self,
-        owner: str,
-        repo: str,
-        pr_number: int,
-    ) -> bool:
-        """
-        Delete a PR metadata cache entry.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            pr_number: Pull request number
-
-        Returns:
-            True if entry was deleted, False if not found
-
-        """
-        conn = self._get_connection()
-
-        cursor = conn.execute(
-            """
-            DELETE FROM pr_metadata_cache
-            WHERE owner = ? AND repo = ? AND pr_number = ?
-        """,
-            (owner, repo, pr_number),
-        )
-        conn.commit()
-        return cursor.rowcount > 0
 
     def get_pr_metadata_date_range(
         self,

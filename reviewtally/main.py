@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import time
 from typing import Any
 
@@ -7,6 +8,7 @@ from tqdm import tqdm
 
 from reviewtally.analysis.sprint_periods import calculate_sprint_periods
 from reviewtally.analysis.team_metrics import calculate_sprint_team_metrics
+from reviewtally.cache.cache_manager import CacheManager
 from reviewtally.cli.parse_cmd_line import CommandLineArgs, parse_cmd_line
 from reviewtally.data_collection import (
     ProcessRepositoriesContext,
@@ -31,6 +33,15 @@ def main() -> None:
 
     # Parse command line arguments
     args = parse_cmd_line()
+
+    # Handle cache management operations
+    if (
+        args["clear_cache"]
+        or args["clear_expired_cache"]
+        or args["show_cache_stats"]
+    ):
+        _handle_cache_operations(args)
+        sys.exit(0)
 
     # Get repositories
     timestamped_print(
@@ -189,6 +200,46 @@ def _handle_sprint_plotting(context: SprintPlottingContext) -> None:
         )
     except Exception as e:  # noqa: BLE001
         print(f"Plotting failed: {e}")  # noqa: T201
+
+
+def _handle_cache_operations(args: CommandLineArgs) -> None:
+    """Handle cache management operations."""
+    cache_manager = CacheManager()
+
+    if args["show_cache_stats"]:
+        if cache_manager.cache:
+            stats = cache_manager.cache.get_stats()
+            print("Cache Statistics:")  # noqa: T201
+            print(f"  Database path: {stats['db_path']}")  # noqa: T201
+            print(f"  Total entries: {stats['total_entries']}")  # noqa: T201
+            print(f"  Valid entries: {stats['valid_entries']}")  # noqa: T201
+            print(f"  Expired entries: {stats['expired_entries']}")  # noqa: T201
+            print(f"  Cache size: {stats['cache_size_mb']} MB")  # noqa: T201
+            print(f"  Database size: {stats['db_size_mb']} MB")  # noqa: T201
+            print("\nBy Table:")  # noqa: T201
+            for table_name, table_stats in stats["by_table"].items():
+                print(f"  {table_name}:")  # noqa: T201
+                print(f"    Total: {table_stats['total']}")  # noqa: T201
+                print(f"    Valid: {table_stats['valid']}")  # noqa: T201
+                print(f"    Expired: {table_stats['expired']}")  # noqa: T201
+                size_mb = table_stats["size_bytes"] / (1024 * 1024)
+                print(f"    Size: {size_mb:.2f} MB")  # noqa: T201
+        else:
+            print("Cache is disabled")  # noqa: T201
+
+    if args["clear_expired_cache"]:
+        if cache_manager.cache:
+            removed = cache_manager.cache.cleanup_expired()
+            print(f"Cleared {removed} expired cache entries")  # noqa: T201
+        else:
+            print("Cache is disabled")  # noqa: T201
+
+    if args["clear_cache"]:
+        if cache_manager.cache:
+            removed = cache_manager.cache.clear_all()
+            print(f"Cleared all {removed} cache entries")  # noqa: T201
+        else:
+            print("Cache is disabled")  # noqa: T201
 
 
 if __name__ == "__main__":
