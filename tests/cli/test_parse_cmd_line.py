@@ -212,8 +212,8 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
         # Assert
         mock_exit.assert_not_called()
         self.assertIsInstance(result, dict)
-        # Check it's the right type
-        self.assertEqual(len(result), 14)
+        # Check it's the right type (14 original + 3 cache options = 17)
+        self.assertEqual(len(result), 17)
 
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
