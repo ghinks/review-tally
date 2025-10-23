@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from reviewtally.cache import MODERATE_THRESHOLD_DAYS, RECENT_THRESHOLD_DAYS
@@ -138,36 +138,16 @@ class CacheManager:
             created_at=pr_data["created_at"],
         )
 
-    def get_pr_list(
+    def get_pr_stats(
         self,
         owner: str,
         repo: str,
     ) -> dict[str, Any] | None:
+        """Get cache statistics from pr_metadata_cache."""
         if not self.enabled or not self.cache:
             return None
 
-        return self.cache.get_pr_index(owner, repo)
-
-    def set_pr_list(
-        self,
-        owner: str,
-        repo: str,
-        pr_index_data: dict[str, Any],
-    ) -> None:
-        if not self.enabled or not self.cache:
-            return
-
-        # PR index has moderate TTL - needs regular updates for active repos
-        ttl_hours = 6  # 6 hours for PR index
-
-        self.cache.set_pr_index(
-            owner,
-            repo,
-            pr_index_data,
-            ttl_hours=ttl_hours,
-            pr_count=len(pr_index_data.get("prs", [])),
-            coverage_complete=pr_index_data.get("coverage_complete", False),
-        )
+        return self.cache.get_pr_metadata_stats(owner, repo)
 
     def get_cached_prs_for_date_range(
         self,
@@ -179,14 +159,17 @@ class CacheManager:
         if not self.enabled or not self.cache:
             return [], None
 
-        # Get PR index from cache
-        pr_index = self.get_pr_list(owner, repo)
-        if not pr_index:
+        # Get PR summaries from pr_metadata_cache
+        pr_summaries = self.cache.get_pr_summaries(owner, repo)
+        if not pr_summaries:
             return [], None
 
-        # Filter PRs by date range from lightweight index
+        # Get cache stats for metadata
+        pr_stats = self.get_pr_stats(owner, repo)
+
+        # Filter PRs by date range from lightweight summaries
         cached_prs = []
-        for pr_summary in pr_index.get("prs", []):
+        for pr_summary in pr_summaries:
             created_at = datetime.fromisoformat(
                 pr_summary["created_at"].replace("Z", "+00:00"),
             )
@@ -200,22 +183,19 @@ class CacheManager:
                 if full_pr:
                     cached_prs.append(full_pr)
 
-        return cached_prs, pr_index
+        return cached_prs, pr_stats
 
     def needs_backward_fetch(
         self,
-        pr_index: dict[str, Any] | None,
+        pr_stats: dict[str, Any] | None,
         start_date: datetime,
     ) -> bool:
-        if not pr_index or pr_index.get("coverage_complete", False):
-            return False
+        if not pr_stats:
+            return True
 
-        earliest_pr = pr_index.get("earliest_pr")
-        if earliest_pr is None:
-            # No PRs exist in this repo - no backward fetch needed
-            return False
+        earliest_pr = pr_stats.get("earliest_pr")
         if not earliest_pr:
-            print("Warning: PR index missing earliest_pr field")  # noqa: T201
+            # No PRs in cache or missing earliest_pr
             return True
 
         earliest_date = datetime.fromisoformat(
@@ -226,23 +206,46 @@ class CacheManager:
 
     def needs_forward_fetch(
         self,
-        pr_index: dict[str, Any] | None,
+        pr_stats: dict[str, Any] | None,
     ) -> bool:
-        if not pr_index:
+        if not pr_stats:
             return True
 
         # Check if cache is stale (older than TTL threshold)
-        last_updated = pr_index.get("last_updated")
+        last_updated = pr_stats.get("last_updated")
         if not last_updated:
             return True
 
-        last_update_time = datetime.fromisoformat(
-            last_updated.replace("Z", "+00:00"),
+        # last_updated is a Unix timestamp (integer)
+        last_update_time = datetime.fromtimestamp(
+            last_updated,
+            tz=timezone.utc,
         )
-        now = datetime.now(last_update_time.tzinfo)
+        now = datetime.now(tz=timezone.utc)
         hours_since_update = (now - last_update_time).total_seconds() / 3600
 
         return hours_since_update > 1  # Refresh if older than 1 hour
+
+    def get_cached_date_range(
+        self,
+        owner: str,
+        repo: str,
+    ) -> dict[str, Any] | None:
+        """
+        Get the date range of currently cached PR metadata for a repository.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+
+        Returns:
+            Dict with min_date, max_date, and count or None if no cached data
+
+        """
+        if not self.enabled or not self.cache:
+            return None
+
+        return self.cache.get_pr_metadata_date_range(owner, repo)
 
 
 # Global cache manager instance
