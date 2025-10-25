@@ -52,7 +52,12 @@ def main() -> None:
         repo_identifiers = args["repositories"]
     else:
         org_name = args["org_name"]
-        assert org_name is not None  # For mypy: ensured during CLI parsing
+        if org_name is None:
+            timestamped_print(
+                "No organization provided and no repositories specified; "
+                "exiting.",
+            )
+            return
         repo_list = get_repos(org_name, args["languages"])
         if repo_list is None:
             return
