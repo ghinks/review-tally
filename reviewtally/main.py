@@ -48,13 +48,20 @@ def main() -> None:
         f"Calling get_repos_by_language {time.time() - start_time:.2f} "
         "seconds",
     )
-    repo_list = get_repos(args["org_name"], args["languages"])
-    if repo_list is None:
-        return
-    repo_names = tqdm(repo_list)
+    if args["repositories"]:
+        repo_identifiers = args["repositories"]
+    else:
+        org_name = args["org_name"]
+        assert org_name is not None  # For mypy: ensured during CLI parsing
+        repo_list = get_repos(org_name, args["languages"])
+        if repo_list is None:
+            return
+        repo_identifiers = [f"{org_name}/{repo}" for repo in repo_list]
+
+    repo_names = tqdm(repo_identifiers)
     timestamped_print(
-        f"Finished get_repos_by_language {time.time() - start_time:.2f} "
-        f"seconds for {len(repo_names)} repositories",
+        f"Prepared repository list {time.time() - start_time:.2f} "
+        f"seconds for {len(repo_identifiers)} repositories",
     )
 
     if args["sprint_analysis"] or args["plot_sprint"]:
@@ -75,7 +82,6 @@ def _handle_sprint_analysis(
     sprint_stats: dict[str, dict[str, Any]] = {}
 
     process_context = ProcessRepositoriesContext(
-        org_name=args["org_name"],
         repo_names=repo_names,
         start_date=args["start_date"],
         end_date=args["end_date"],
@@ -97,7 +103,7 @@ def _handle_sprint_analysis(
     if args["plot_sprint"]:
         plotting_context = SprintPlottingContext(
             team_metrics=team_metrics,
-            org_name=args["org_name"],
+            org_name=args["org_name"] or "Selected Repositories",
             start_date=args["start_date"],
             end_date=args["end_date"],
             chart_type=args["chart_type"],
@@ -114,7 +120,6 @@ def _handle_individual_analysis(
 ) -> None:
     """Handle individual reviewer analysis mode."""
     process_context = ProcessRepositoriesContext(
-        org_name=args["org_name"],
         repo_names=repo_names,
         start_date=args["start_date"],
         end_date=args["end_date"],
@@ -144,7 +149,7 @@ def _handle_individual_plotting(
         args["individual_chart_metric"],
     )
 
-    org_name = args["org_name"] or "Organization"
+    org_name = args["org_name"] or "Selected Repositories"
     title = (
         f"{metric_display_name} Distribution - {org_name} | "
         f"{args['start_date'].date()} to {args['end_date'].date()}"

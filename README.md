@@ -13,6 +13,11 @@ basic usage:
 ```bash
 review-tally -o expressjs -l javascript
 ```
+
+To load settings from a configuration file instead of the CLI, pass the
+`--config` option with a path to a TOML file. The file can contain any of the
+available CLI options and replaces the `-o/--org` flag with an explicit list of
+repositories to analyze.
  
 which would produce the following output
 
@@ -162,6 +167,7 @@ review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_d
 ## Options
 
 * -o, --organization The Github organization that you want to query
+* -c, --config Path to a TOML configuration file (overrides matching CLI options)
 * -l, --languages  A comma separated list of languages that you want to include
 * -s, --start-date The start date for the time frame that you want to query (optional)
 * -e, --end-date The end date for the time frame that you want to query (optional)
@@ -177,6 +183,26 @@ review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_d
 * --plot-individual Generate pie charts showing individual reviewer metric distribution (opens in browser)
 * --individual-chart-metric Metric to visualize in individual pie chart. Default: reviews. Available: reviews,comments,engagement_level,thoroughness_score,avg_response_time_hours,avg_completion_time_hours,active_review_days
 * --no-cache Disable PR review caching (always fetch fresh data from API). By default, caching is enabled for better performance.
+
+## Using a configuration file
+
+You can capture preferred settings in a TOML configuration file and reuse them
+with the `--config` option.
+
+```toml
+repositories = ["expressjs/express", "expressjs/body-parser"]
+start_date = "2024-01-01"
+end_date = "2024-01-31"
+languages = ["javascript", "typescript"]
+metrics = ["reviews", "comments", "avg-comments"]
+plot_sprint = true
+save_plot = "reports/sprint.html"
+```
+
+Each entry in `repositories` must include both the owner and repository name in
+the form `owner/repository`. Any value provided in the configuration file takes
+precedence over the equivalent CLI flag. CLI-only runs remain supported by
+supplying `-o/--org` as before.
 
 ## GitHub API Rate Limiting
 

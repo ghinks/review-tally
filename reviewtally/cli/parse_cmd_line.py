@@ -8,7 +8,13 @@ import argparse
 import importlib.metadata
 import sys
 from datetime import datetime, timedelta, timezone
-from typing import TypedDict
+from pathlib import Path
+from typing import Any, TypedDict
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # pragma: no cover - Python 3.10 fallback
+    import tomli as tomllib  # type: ignore[import-not-found]
 
 from reviewtally.exceptions.local_exceptions import MalformedDateError
 
@@ -16,7 +22,8 @@ from reviewtally.exceptions.local_exceptions import MalformedDateError
 class CommandLineArgs(TypedDict):
     """Type definition for cli arguments returned by parse_cmd_line."""
 
-    org_name: str
+    org_name: str | None
+    repositories: list[str] | None
     start_date: datetime
     end_date: datetime
     languages: list[str]
@@ -35,9 +42,62 @@ class CommandLineArgs(TypedDict):
     show_cache_stats: bool
 
 
+class ConfigError(Exception):
+    """Raised when configuration file cannot be processed."""
+
+
 def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
     print(f"Current version is {version}")  # noqa: T201
+
+
+def _load_config(path: str) -> dict[str, Any]:
+    config_path = Path(path)
+    if not config_path.is_file():
+        msg = f"Error: Configuration file '{path}' not found"
+        raise ConfigError(msg)
+    try:
+        with config_path.open("rb") as file:
+            data = tomllib.load(file)
+    except tomllib.TOMLDecodeError as exc:  # pragma: no cover
+        msg = f"Error parsing configuration file '{path}': {exc}"
+        raise ConfigError(msg) from exc
+    if not isinstance(data, dict):
+        msg = "Configuration file must contain a TOML table"
+        raise ConfigError(msg)
+    return data
+
+
+def _split_list(value: str | list[str] | None) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [item.strip() for item in value.split(",") if item.strip()]
+    if isinstance(value, list):
+        result: list[str] = []
+        for item in value:
+            if not isinstance(item, str):
+                msg = "Configuration list values must be strings"
+                raise ConfigError(msg)
+            if item.strip():
+                result.append(item.strip())
+        return result
+    msg = "Configuration values must be strings or lists of strings"
+    raise ConfigError(msg)
+
+
+def _parse_repositories(value: str | list[str] | None) -> list[str]:
+    repositories = _split_list(value)
+    if not repositories:
+        msg = "Configuration must define at least one repository"
+        raise ConfigError(msg)
+    for repository in repositories:
+        if "/" not in repository:
+            msg = (
+                "Repository entries must be in the format 'owner/repository'"
+            )
+            raise ConfigError(msg)
+    return repositories
 
 
 def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
@@ -53,6 +113,12 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     mut_exc_plot_group = parser.add_mutually_exclusive_group()
     # these arguments are required
     parser.add_argument("-o", "--org", required=False, help=org_help)
+    parser.add_argument(
+        "-c",
+        "--config",
+        required=False,
+        help="Path to TOML configuration file",
+    )
     date_format = "%Y-%m-%d"
     two_weeks_ago = datetime.now(tz=timezone.utc) - timedelta(days=14)
     today = datetime.now(tz=timezone.utc)
@@ -184,22 +250,44 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
 
     args = parser.parse_args()
+
+    config_data: dict[str, Any] = {}
+    if args.config:
+        try:
+            config_data = _load_config(args.config)
+        except ConfigError as exc:
+            print(exc)  # noqa: T201
+            sys.exit(1)
+    parser_defaults = {
+        "metrics": parser.get_default("metrics"),
+        "chart_metrics": parser.get_default("chart_metrics"),
+        "chart_type": parser.get_default("chart_type"),
+        "language": parser.get_default("language"),
+    }
     # catch ValueError if the date format is not correct
+    start_date_source = (
+        args.start_date
+        if args.start_date != parser.get_default("start_date")
+        else config_data.get("start_date", args.start_date)
+    )
     try:
-        if args.start_date:
-            start_date = (
-                datetime.strptime(args.start_date, "%Y-%m-%d")
-            ).replace(tzinfo=timezone.utc)
+        start_date = (
+            datetime.strptime(start_date_source, "%Y-%m-%d")
+        ).replace(tzinfo=timezone.utc)
     except ValueError:
-        print(MalformedDateError(args.start_date))  # noqa: T201
+        print(MalformedDateError(start_date_source))  # noqa: T201
         sys.exit(1)
+    end_date_source = (
+        args.end_date
+        if args.end_date != parser.get_default("end_date")
+        else config_data.get("end_date", args.end_date)
+    )
     try:
-        if args.end_date:
-            end_date = (datetime.strptime(args.end_date, "%Y-%m-%d")).replace(
-                tzinfo=timezone.utc,
-            )
+        end_date = (datetime.strptime(end_date_source, "%Y-%m-%d")).replace(
+            tzinfo=timezone.utc,
+        )
     except ValueError:
-        print(MalformedDateError(args.end_date))  # noqa: T201
+        print(MalformedDateError(end_date_source))  # noqa: T201
         sys.exit(1)
     if args.version:
         print_toml_version()
@@ -208,53 +296,135 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         print("Error: Start date must be before end date")  # noqa: T201
         sys.exit(1)
     # if the language arg has comma separated values, split them
-    if args.language is None:
-        languages = []
-    elif args.language and "," in args.language:
-        languages = args.language.split(",")
+    language_source: str | list[str] | None
+    if args.language is not None:
+        language_source = args.language
     else:
-        languages = [args.language]
+        language_source = config_data.get(
+            "languages",
+            parser_defaults["language"],
+        )
+    try:
+        languages = _split_list(language_source)
+    except ConfigError as exc:
+        print(exc)  # noqa: T201
+        sys.exit(1)
 
     # parse metrics argument
-    if args.metrics and "," in args.metrics:
-        metrics = args.metrics.split(",")
+    metrics_source: str | list[str] | None
+    if args.metrics != parser_defaults["metrics"]:
+        metrics_source = args.metrics
     else:
-        metrics = [args.metrics]
+        metrics_source = config_data.get("metrics", parser_defaults["metrics"])
+    try:
+        metrics = _split_list(metrics_source)
+    except ConfigError as exc:
+        print(exc)  # noqa: T201
+        sys.exit(1)
 
     # parse chart metrics argument
-    if args.chart_metrics and "," in args.chart_metrics:
-        chart_metrics = args.chart_metrics.split(",")
+    chart_metrics_source: str | list[str] | None
+    if args.chart_metrics != parser_defaults["chart_metrics"]:
+        chart_metrics_source = args.chart_metrics
     else:
-        chart_metrics = [args.chart_metrics]
+        chart_metrics_source = config_data.get(
+            "chart_metrics",
+            parser_defaults["chart_metrics"],
+        )
+    try:
+        chart_metrics = _split_list(chart_metrics_source)
+    except ConfigError as exc:
+        print(exc)  # noqa: T201
+        sys.exit(1)
 
-    if args.plot_sprint and args.individual_chart_metric:
+    plot_sprint = bool(
+        args.plot_sprint or config_data.get("plot_sprint", False),
+    )
+    plot_individual = bool(
+        args.plot_individual or config_data.get("plot_individual", False),
+    )
+    individual_chart_metric = (
+        args.individual_chart_metric
+        if args.individual_chart_metric
+        != parser.get_default("individual_chart_metric")
+        else config_data.get(
+            "individual_chart_metric",
+            args.individual_chart_metric,
+        )
+    )
+
+    if plot_sprint and plot_individual:
         print(  # noqa: T201
-            "Error: chart metrics and individual chart metric "
-            "are mutually exclusive.",
+            "Error: plot sprint and plot individual options are mutually "
+            "exclusive.",
         )
         sys.exit(1)
-    if args.plot_individual and args.chart_metrics:
-        print(  # noqa: T201
-            "Error: plot individual and chart metrics are mutually exclusive.",
-        )
+
+    config_repositories: list[str] | None = None
+    if "repositories" in config_data:
+        try:
+            config_repositories = _parse_repositories(
+                config_data.get("repositories"),
+            )
+        except ConfigError as exc:
+            print(exc)  # noqa: T201
+            sys.exit(1)
+
+    org_name = args.org if args.org is not None else config_data.get("org")
+    if not org_name and not config_repositories:
+        print("Error: Provide an organization or repositories to analyze")  # noqa: T201
+        sys.exit(1)
+
+    use_cache_config = config_data.get("use_cache")
+    if args.no_cache:
+        use_cache = False
+    elif use_cache_config is None:
+        use_cache = True
+    elif isinstance(use_cache_config, bool):
+        use_cache = use_cache_config
+    else:
+        print("Configuration value 'use_cache' must be a boolean")  # noqa: T201
         sys.exit(1)
 
     return CommandLineArgs(
-        org_name=args.org,
+        org_name=org_name,
+        repositories=config_repositories,
         start_date=start_date,
         end_date=end_date,
         languages=languages,
         metrics=metrics,
-        sprint_analysis=args.sprint_analysis,
-        output_path=args.output_path,
-        plot_sprint=args.plot_sprint,
-        chart_type=args.chart_type,
+        sprint_analysis=bool(
+            args.sprint_analysis
+            or config_data.get("sprint_analysis", False),
+        ),
+        output_path=(
+            args.output_path
+            if args.output_path is not None
+            else config_data.get("output_path")
+        ),
+        plot_sprint=plot_sprint,
+        chart_type=(
+            args.chart_type
+            if args.chart_type != parser_defaults["chart_type"]
+            else config_data.get("chart_type", args.chart_type)
+        ),
         chart_metrics=chart_metrics,
-        save_plot=args.save_plot,
-        plot_individual=args.plot_individual,
-        individual_chart_metric=args.individual_chart_metric,
-        use_cache=not args.no_cache,
-        clear_cache=args.clear_cache,
-        clear_expired_cache=args.clear_expired_cache,
-        show_cache_stats=args.cache_stats,
+        save_plot=(
+            args.save_plot
+            if args.save_plot is not None
+            else config_data.get("save_plot")
+        ),
+        plot_individual=plot_individual,
+        individual_chart_metric=individual_chart_metric,
+        use_cache=use_cache,
+        clear_cache=bool(
+            args.clear_cache or config_data.get("clear_cache", False),
+        ),
+        clear_expired_cache=bool(
+            args.clear_expired_cache
+            or config_data.get("clear_expired_cache", False),
+        ),
+        show_cache_stats=bool(
+            args.cache_stats or config_data.get("show_cache_stats", False),
+        ),
     )
