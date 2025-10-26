@@ -11,7 +11,7 @@ variable should be named `GITHUB_TOKEN`.
 
 basic usage:
 ```bash
-review-tally -o expressjs -l javascript
+review-tally -o expressjs --languages javascript
 ```
  
 which would produce the following output
@@ -69,7 +69,7 @@ LinusU                                      1           0             0    Low  
 ```
 multiple languages:
 ```bash
-review-tally -o crossplane -l python,go
+review-tally -o crossplane --languages python,go
 ```
 
 All languages:
@@ -79,18 +79,18 @@ review-tally -o expressjs
 
 Specifying the time frame:
 ```bash
-review-tally -o expressjs -l javascript -s 2021-01-01 -e 2021-01-31
+review-tally -o expressjs --languages javascript -s 2021-01-01 -e 2021-01-31
 ```
 
 You can use the long-form flags as well (note the hyphenated names):
 
 ```bash
-review-tally -o expressjs -l javascript --start-date 2021-01-01 --end-date 2021-01-31
+review-tally -o expressjs --languages javascript --start-date 2021-01-01 --end-date 2021-01-31
 ```
 
 Customizing metrics displayed:
 ```bash
-review-tally -o expressjs -l javascript -m reviews,engagement,thoroughness
+review-tally -o expressjs --languages javascript -m reviews,engagement,thoroughness
 ```
 
 ## Sprint Analysis
@@ -98,7 +98,7 @@ If aggregate data is required sprint over sprint then the `--sprint-analysis`
 option can be used. This will produce a CSV file with the data for each sprint.
 
 ```shell
-review-tally -o expressjs -l javascript --sprint-analysis --output-path sprint_analysis.csv
+review-tally -o expressjs --languages javascript --sprint-analysis --output-path sprint_analysis.csv
 ```
 
 ## Sprint Plotting
@@ -106,22 +106,22 @@ The tool can generate interactive charts showing sprint metrics over time. You c
 
 ### Basic plotting (automatically enables sprint analysis):
 ```shell
-review-tally -o expressjs -l javascript --plot-sprint
+review-tally -o expressjs --languages javascript --plot-sprint
 ```
 
 ### Plotting with custom chart type and metrics:
 ```shell
-review-tally -o expressjs -l javascript --plot-sprint --chart-type line --chart-metrics total_reviews,unique_reviewers
+review-tally -o expressjs --languages javascript --plot-sprint --chart-type line --chart-metrics total_reviews,unique_reviewers
 ```
 
 ### Saving the plot to a file:
 ```shell
-review-tally -o expressjs -l javascript --plot-sprint --save-plot sprint_metrics.html
+review-tally -o expressjs --languages javascript --plot-sprint --save-plot sprint_metrics.html
 ```
 
 ### Combining with CSV export:
 ```shell
-review-tally -o expressjs -l javascript --sprint-analysis --plot-sprint --output-path sprint_data.csv
+review-tally -o expressjs --languages javascript --sprint-analysis --plot-sprint --output-path sprint_data.csv
 ```
 
 ### Example: Sprint bar chart for expressjs
@@ -132,24 +132,24 @@ The tool can generate pie charts showing the distribution of metrics across indi
 
 ### Basic pie chart (shows review distribution):
 ```shell
-review-tally -o expressjs -l javascript --plot-individual
+review-tally -o expressjs --languages javascript --plot-individual
 ```
 
 ### Pie chart with specific metrics:
 ```shell
 # Show engagement level distribution
-review-tally -o expressjs -l javascript --plot-individual --individual-chart-metric engagement_level
+review-tally -o expressjs --languages javascript --plot-individual --individual-chart-metric engagement_level
 
 # Show thoroughness score distribution
-review-tally -o expressjs -l javascript --plot-individual --individual-chart-metric thoroughness_score
+review-tally -o expressjs --languages javascript --plot-individual --individual-chart-metric thoroughness_score
 
 # Show comment distribution
-review-tally -o expressjs -l javascript --plot-individual --individual-chart-metric comments
+review-tally -o expressjs --languages javascript --plot-individual --individual-chart-metric comments
 ```
 
 ### Saving the pie chart to a file:
 ```shell
-review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_distribution.html
+review-tally -o expressjs --languages javascript --plot-individual --save-plot reviewer_distribution.html
 ```
 
 ### Example: Comment distribution pie chart for expressjs
@@ -168,7 +168,7 @@ review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_d
 ## Options
 
 * -o, --org The GitHub organization that you want to query
-* -l, --language  A comma separated list of languages that you want to include
+* -l, --languages  A comma separated list of languages that you want to include
 * -s, --start-date The start date for the time frame that you want to query (optional)
 * -e, --end-date The end date for the time frame that you want to query (optional)
 * -m, --metrics Comma-separated list of metrics to display (reviews,comments,avg-comments,engagement,thoroughness). Default: reviews,comments,avg-comments

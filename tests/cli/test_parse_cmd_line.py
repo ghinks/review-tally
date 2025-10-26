@@ -341,5 +341,38 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
         self.assertIn("Please use the format YYYY-MM-DD", printed_error)
 
 
+class TestParseCmdLineLanguageArgument(unittest.TestCase):
+    """Tests related to the --languages CLI option."""
+
+    @patch("sys.exit")
+    @patch("sys.argv")
+    def test_language_argument_trims_and_filters(
+        self,
+        mock_argv: Any,
+        mock_exit: Any,
+    ) -> None:
+        """Languages argument strips whitespace and ignores empties."""
+        mock_argv.__getitem__.side_effect = lambda x: [
+            "review-tally",
+            "-o",
+            "test-org",
+            "-l",
+            " python, javascript , ,TypeScript  ",
+            "-s",
+            "2023-01-01",
+            "-e",
+            "2023-01-31",
+        ][x]
+        mock_argv.__len__.return_value = 9
+
+        result = parse_cmd_line()
+
+        mock_exit.assert_not_called()
+        self.assertEqual(
+            result["languages"],
+            ["python", "javascript", "typescript"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

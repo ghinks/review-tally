@@ -48,7 +48,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     org_help = "Organization name"
     start_date_help = "Start date in the format YYYY-MM-DD"
     end_date_help = "End date in the format YYYY-MM-DD"
-    language_selection = "Select the language to filter the pull requests"
+    language_selection = "Select the languages to filter the pull requests"
     parser = argparse.ArgumentParser(description=description)
     mut_exc_plot_group = parser.add_mutually_exclusive_group()
     # these arguments are required
@@ -75,7 +75,8 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     # add the language selection argument
     parser.add_argument(
         "-l",
-        "--language",
+        "--languages",
+        dest="languages",
         required=False,
         help=language_selection,
     )
@@ -210,12 +211,19 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         print("Error: Start date must be before end date")  # noqa: T201
         sys.exit(1)
     # if the language arg has comma separated values, split them
-    if args.language is None:
+    if args.languages is None:
         languages = []
-    elif args.language and "," in args.language:
-        languages = args.language.split(",")
     else:
-        languages = [args.language]
+        if "," in args.languages:
+            raw_languages = args.languages.split(",")
+        else:
+            raw_languages = [args.languages]
+        languages = [
+            language.strip()
+            for language in raw_languages
+            if language.strip()
+        ]
+        languages = [language.lower() for language in languages]
 
     # parse metrics argument
     if args.metrics and "," in args.metrics:
