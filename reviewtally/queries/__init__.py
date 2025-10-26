@@ -1,6 +1,9 @@
+import os
 import ssl
 
 import aiohttp
+
+from reviewtally.exceptions.local_exceptions import GitHubTokenNotDefinedError
 
 GENERAL_TIMEOUT = 60
 GRAPHQL_TIMEOUT = 60
@@ -44,3 +47,11 @@ CONNECTION_ENABLE_CLEANUP = True  # Enable automatic connection cleanup
 
 # Repository filtering configuration
 MAX_PR_COUNT = 100000  # Skip repositories with more PRs than this threshold
+
+
+def require_github_token() -> str:
+    """Return the GitHub token or raise if it is undefined."""
+    github_token = os.getenv("GITHUB_TOKEN")
+    if github_token is None:
+        raise GitHubTokenNotDefinedError
+    return github_token

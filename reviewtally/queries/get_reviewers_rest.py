@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 import random
@@ -19,9 +21,9 @@ from reviewtally.queries import (
     MAX_RETRIES,
     RETRYABLE_STATUS_CODES,
     SSL_CONTEXT,
+    require_github_token,
 )
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 # get proxy settings from environment variables
 HTTPS_PROXY = os.getenv("HTTPS_PROXY")
 # check for lowercase https_proxy
@@ -81,9 +83,14 @@ async def check_rate_limit_and_sleep(response: aiohttp.ClientResponse) -> None:
         print(f"Warning: Could not parse rate limit headers: {e}")  # noqa: T201
 
 
-async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
+async def fetch(
+    client: aiohttp.ClientSession,
+    url: str,
+    *,
+    github_token: str,
+) -> dict[str, Any]:
     headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Authorization": f"Bearer {github_token}",
         "Accept": "application/vnd.github.v3+json",
     }
 
@@ -146,7 +153,12 @@ async def _backoff_delay(attempt: int) -> None:
     await asyncio.sleep(delay + jitter)
 
 
-async def fetch_batch(urls: list[str]) -> tuple[Any]:
+async def fetch_batch(
+    urls: list[str],
+    *,
+    github_token: str | None = None,
+) -> tuple[Any]:
+    token = github_token or require_github_token()
     connector = aiohttp.TCPConnector(
         ssl=SSL_CONTEXT,
         limit=CONNECTION_POOL_SIZE,
@@ -158,7 +170,10 @@ async def fetch_batch(urls: list[str]) -> tuple[Any]:
         timeout=AIOHTTP_TIMEOUT,
         connector=connector,
     ) as session:
-        tasks = [fetch(session, url) for url in urls]
+        tasks = [
+            fetch(session, url, github_token=token)
+            for url in urls
+        ]
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
 
@@ -166,13 +181,16 @@ def get_reviewers_for_pull_requests(
     owner: str,
     repo: str,
     pull_numbers: list[int],
+    *,
+    github_token: str | None = None,
 ) -> list[dict]:
+    token = github_token or require_github_token()
     urls = [
         f"https://api.github.com/repos/{owner}/{repo}"
         f"/pulls/{pull_number}/reviews"
         for pull_number in pull_numbers
     ]
-    reviewers = asyncio.run(fetch_batch(urls))
+    reviewers = asyncio.run(fetch_batch(urls, github_token=token))
     return [item["user"] for sublist in reviewers for item in sublist]
 
 
@@ -204,6 +222,8 @@ def _fetch_review_metadata(
     owner: str,
     repo: str,
     uncached_prs: list[int],
+    *,
+    github_token: str,
 ) -> list[dict]:
     """Fetch reviews and collect metadata with comment URLs."""
     review_urls = [
@@ -211,7 +231,9 @@ def _fetch_review_metadata(
         f"/pulls/{pull_number}/reviews"
         for pull_number in uncached_prs
     ]
-    reviews_response = asyncio.run(fetch_batch(review_urls))
+    reviews_response = asyncio.run(
+        fetch_batch(review_urls, github_token=github_token),
+    )
 
     review_data = []
 
@@ -248,19 +270,22 @@ def _fetch_review_metadata(
 
 def _process_and_cache_reviews(
     cache_manager: CacheManager,
-    owner: str,
-    repo: str,
+    repo_identifier: tuple[str, str],
     review_data: list[dict],
     *,
+    github_token: str,
     use_cache: bool = True,
 ) -> list[dict]:
+    owner, repo = repo_identifier
     """Process comments and cache individual PR reviews."""
     if not review_data:
         return []
 
     # Extract comment URLs from review data
     comment_urls = [review["comment_url"] for review in review_data]
-    comments_response = asyncio.run(fetch_batch(comment_urls))
+    comments_response = asyncio.run(
+        fetch_batch(comment_urls, github_token=github_token),
+    )
 
     # Combine the data and group by PR for individual caching
     pr_review_data: dict[int, list[dict[str, Any]]] = {}
@@ -302,9 +327,11 @@ def get_reviewers_with_comments_for_pull_requests(
     repo: str,
     pull_numbers: list[int],
     *,
+    github_token: str | None = None,
     use_cache: bool = True,
 ) -> list[dict]:
     cache_manager = get_cache_manager()
+    token = github_token or require_github_token()
 
     if use_cache:
         # Check cache for each PR individually
@@ -328,14 +355,15 @@ def get_reviewers_with_comments_for_pull_requests(
         owner,
         repo,
         uncached_prs,
+        github_token=token,
     )
 
     # Process comments and cache results
     uncached_results = _process_and_cache_reviews(
         cache_manager,
-        owner,
-        repo,
+        (owner, repo),
         review_data,
+        github_token=token,
         use_cache=use_cache,
     )
 
