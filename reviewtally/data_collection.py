@@ -44,7 +44,6 @@ class ReviewDataContext:
 class ProcessRepositoriesContext:
     """Context object for repository processing."""
 
-    org_name: str
     repo_names: tqdm
     start_date: datetime
     end_date: datetime
@@ -177,9 +176,13 @@ def process_repositories(
 
     for repo in context.repo_names:
         timestamped_print(f"Processing {repo}")
+        owner, _, repo_name = repo.partition("/")
+        if not owner or not repo_name:
+            msg = f"Invalid repository identifier '{repo}'"
+            raise ValueError(msg)
         pull_requests = get_pull_requests_between_dates(
-            context.org_name,
-            repo,
+            owner,
+            repo_name,
             context.start_date,
             context.end_date,
             use_cache=context.use_cache,
@@ -190,11 +193,11 @@ def process_repositories(
             f"{len(pull_requests)} pull requests",
         )
         context.repo_names.set_description(
-            f"Processing {context.org_name}/{repo}",
+            f"Processing {owner}/{repo_name}",
         )
         review_context = ReviewDataContext(
-            org_name=context.org_name,
-            repo=repo,
+            org_name=owner,
+            repo=repo_name,
             pull_requests=pull_requests,
             reviewer_stats=reviewer_stats,
             sprint_stats=context.sprint_stats,
