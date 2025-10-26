@@ -1,3 +1,4 @@
+import os
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
@@ -33,6 +34,7 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
     EXPECTED_LEN = len(MOCK_RESP_DATA)
 
     @patch("requests.get")
+    @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
     def test_get_pull_requests_between_dates(self, mock_get) -> None:  # noqa: ANN001
         # Create mock responses for Search API format
         # Search API filters by date server-side, so only return PRs in range
@@ -82,6 +84,7 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
         )
 
     @patch("requests.get")
+    @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
     def test_raises_after_100_pages(self, mock_get) -> None:  # noqa: ANN001
         # Always return a non-empty page in Search API format,
         # so pagination continues until the function's max-page limit is hit.

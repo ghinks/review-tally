@@ -4,6 +4,7 @@ import unittest
 from aioresponses import aioresponses
 
 from reviewtally.queries.get_reviewers_rest import fetch_batch
+from tests.constants import TEST_GITHUB_TOKEN
 from tests.utils import get_reviews_url, read_reviews_file
 
 
@@ -18,7 +19,7 @@ class TestFetchBatch(unittest.TestCase):
             mocked.get(url, status=200, payload=payload)
 
         async def run_test() -> None:
-            result = await fetch_batch(urls)
+            result = await fetch_batch(urls, github_token=TEST_GITHUB_TOKEN)
             assert result == [payload, payload]
 
         asyncio.run(run_test())

@@ -5,6 +5,7 @@ import aiohttp
 from aioresponses import aioresponses
 
 from reviewtally.queries.get_reviewers_rest import fetch
+from tests.constants import TEST_GITHUB_TOKEN
 from tests.utils import get_reviews_url, read_reviews_file
 
 
@@ -17,7 +18,11 @@ class TestFetch(unittest.TestCase):
 
         async def run_test() -> None:
             async with aiohttp.ClientSession() as session:
-                result = await fetch(session, url)
+                result = await fetch(
+                    session,
+                    url,
+                    github_token=TEST_GITHUB_TOKEN,
+                )
                 assert result == payload
 
         asyncio.run(run_test())

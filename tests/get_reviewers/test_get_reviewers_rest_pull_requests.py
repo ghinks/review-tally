@@ -5,6 +5,7 @@ from aioresponses import aioresponses
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_for_pull_requests,
 )
+from tests.constants import TEST_GITHUB_TOKEN
 from tests.utils import get_reviews_url, read_reviews_file
 
 
@@ -26,5 +27,6 @@ class TestGetReviewers(unittest.TestCase):
             self.OWNER,
             self.REPO,
             self.PULL_REQUESTS,
+            github_token=TEST_GITHUB_TOKEN,
         )
         assert results[0]["id"] == 1

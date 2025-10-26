@@ -5,6 +5,7 @@ from aioresponses import aioresponses
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
 )
+from tests.constants import TEST_GITHUB_TOKEN
 from tests.utils import (
     get_review_comments_url,
     get_reviews_url,
@@ -61,6 +62,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
             self.OWNER,
             self.REPO,
             pull_numbers,
+            github_token=TEST_GITHUB_TOKEN,
         )
 
         # Assertions
@@ -92,6 +94,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
             self.OWNER,
             self.REPO,
             pull_numbers,
+            github_token=TEST_GITHUB_TOKEN,
         )
 
         # Should return empty list when no reviews
@@ -128,6 +131,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
             self.OWNER,
             self.REPO,
             pull_numbers,
+            github_token=TEST_GITHUB_TOKEN,
         )
 
         # Should have one result with 0 comments
@@ -183,6 +187,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
             self.OWNER,
             self.REPO,
             pull_numbers,
+            github_token=TEST_GITHUB_TOKEN,
         )
 
         # Should have results for both PRs
@@ -232,6 +237,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
             self.OWNER,
             self.REPO,
             pull_numbers,
+            github_token=TEST_GITHUB_TOKEN,
         )
 
         # Should have results for both reviewers
@@ -291,6 +297,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
             self.OWNER,
             self.REPO,
             pull_numbers,
+            github_token=TEST_GITHUB_TOKEN,
         )
 
         # Should only have result for first PR
@@ -338,6 +345,7 @@ class TestGetReviewersWithComments(unittest.TestCase):
             self.OWNER,
             self.REPO,
             pull_numbers,
+            github_token=TEST_GITHUB_TOKEN,
         )
 
         # Should have results for both reviewers
