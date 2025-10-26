@@ -235,6 +235,41 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
         self.assertIsNone(result["save_plot"])
 
     @patch("sys.exit")
+    @patch("sys.argv")
+    def test_long_form_date_flags(
+        self,
+        mock_argv: Any,
+        mock_exit: Any,
+    ) -> None:
+        """Ensure hyphenated long-form date flags parse correctly."""
+        # Arrange
+        mock_argv.__getitem__.side_effect = lambda x: [
+            "review-tally",
+            "--org",
+            "test-org",
+            "--start-date",
+            "2023-02-01",
+            "--end-date",
+            "2023-02-15",
+        ][x]
+        mock_argv.__len__.return_value = 7
+
+        # Act
+        result = parse_cmd_line()
+
+        # Assert
+        mock_exit.assert_not_called()
+        self.assertEqual(result["org_name"], "test-org")
+        self.assertEqual(
+            result["start_date"],
+            datetime(2023, 2, 1, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            result["end_date"],
+            datetime(2023, 2, 15, tzinfo=timezone.utc),
+        )
+
+    @patch("sys.exit")
     @patch("builtins.print")
     @patch("sys.argv")
     def test_both_dates_malformed_start_fails_first(

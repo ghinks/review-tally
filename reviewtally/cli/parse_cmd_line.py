@@ -58,14 +58,16 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     today = datetime.now(tz=timezone.utc)
     parser.add_argument(
         "-s",
-        "--start_date",
+        "--start-date",
+        dest="start_date",
         required=False,
         help=start_date_help,
         default=two_weeks_ago.strftime(date_format),
     )
     parser.add_argument(
         "-e",
-        "--end_date",
+        "--end-date",
+        dest="end_date",
         required=False,
         help=end_date_help,
         default=today.strftime(date_format),
