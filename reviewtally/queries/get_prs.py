@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import random
 import time
 from datetime import datetime
@@ -22,9 +21,9 @@ from reviewtally.queries import (
     MAX_BACKOFF,
     MAX_RETRIES,
     RETRYABLE_STATUS_CODES,
+    require_github_token,
 )
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 MAX_NUM_PAGES = 100
 ITEMS_PER_PAGE = 100
 RATE_LIMIT_REMAINING_THRESHOLD = 10  # arbitrary threshold
@@ -122,8 +121,9 @@ def fetch_pull_requests_from_github(
 ) -> tuple[list[dict], bool]:
     # Use GitHub Search Issues API for native date filtering
     url = "https://api.github.com/search/issues"
+    github_token = require_github_token()
     headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Authorization": f"Bearer {github_token}",
         "Accept": "application/vnd.github.v3+json",
     }
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 import random
@@ -19,9 +21,9 @@ from reviewtally.queries import (
     MAX_RETRIES,
     RETRYABLE_STATUS_CODES,
     SSL_CONTEXT,
+    require_github_token,
 )
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 # get proxy settings from environment variables
 HTTPS_PROXY = os.getenv("HTTPS_PROXY")
 # check for lowercase https_proxy
@@ -81,9 +83,14 @@ async def check_rate_limit_and_sleep(response: aiohttp.ClientResponse) -> None:
         print(f"Warning: Could not parse rate limit headers: {e}")  # noqa: T201
 
 
-async def fetch(client: aiohttp.ClientSession, url: str) -> dict[str, Any]:
+async def fetch(
+    client: aiohttp.ClientSession,
+    url: str,
+    github_token: str | None = None,
+) -> dict[str, Any]:
+    token = github_token or require_github_token()
     headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
     }
 
@@ -158,7 +165,8 @@ async def fetch_batch(urls: list[str]) -> tuple[Any]:
         timeout=AIOHTTP_TIMEOUT,
         connector=connector,
     ) as session:
-        tasks = [fetch(session, url) for url in urls]
+        github_token = require_github_token()
+        tasks = [fetch(session, url, github_token) for url in urls]
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
 

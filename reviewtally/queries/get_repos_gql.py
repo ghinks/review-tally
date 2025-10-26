@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sys
 
 import requests
@@ -10,7 +9,11 @@ from reviewtally.exceptions.local_exceptions import (
     HTTPErrorBadTokenError,
     NoGitHubOrgError,
 )
-from reviewtally.queries import GRAPHQL_TIMEOUT, MAX_PR_COUNT
+from reviewtally.queries import (
+    GRAPHQL_TIMEOUT,
+    MAX_PR_COUNT,
+    require_github_token,
+)
 
 # exceptions.py
 
@@ -22,10 +25,7 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
 
     # check for github_token and raise an exception if it
     # is not defined
-    github_token = os.getenv("GITHUB_TOKEN")
-
-    if github_token is None:
-        raise GitHubTokenNotDefinedError
+    github_token = require_github_token()
     url = "https://api.github.com/graphql"
     headers = {
         "Authorization": f"Bearer {github_token}",
