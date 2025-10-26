@@ -12,6 +12,7 @@ from reviewtally.cache.cache_manager import CacheManager
 from reviewtally.cli.parse_cmd_line import CommandLineArgs, parse_cmd_line
 from reviewtally.data_collection import (
     ProcessRepositoriesContext,
+    RepositoryTarget,
     SprintPlottingContext,
     process_repositories,
     timestamped_print,
@@ -43,29 +44,46 @@ def main() -> None:
         _handle_cache_operations(args)
         sys.exit(0)
 
-    # Get repositories
-    timestamped_print(
-        f"Calling get_repos_by_language {time.time() - start_time:.2f} "
-        "seconds",
-    )
-    repo_list = get_repos(args["org_name"], args["languages"])
-    if repo_list is None:
-        return
-    repo_names = tqdm(repo_list)
-    timestamped_print(
-        f"Finished get_repos_by_language {time.time() - start_time:.2f} "
-        f"seconds for {len(repo_names)} repositories",
-    )
+    repo_targets: list[RepositoryTarget]
+    if args["repositories"]:
+        repo_targets = []
+        for full_name in args["repositories"]:
+            owner, repo_name = full_name.split("/", 1)
+            repo_targets.append(RepositoryTarget(owner=owner, name=repo_name))
+        configured_message = (
+            "Using configured repositories "
+            f"{time.time() - start_time:.2f} seconds"
+        )
+        timestamped_print(configured_message)
+    else:
+        request_message = (
+            "Calling get_repos_by_language "
+            f"{time.time() - start_time:.2f} seconds"
+        )
+        timestamped_print(request_message)
+        org_name = args["org_name"] or ""
+        repo_names = get_repos(org_name, args["languages"])
+        if repo_names is None:
+            return
+        repo_targets = [
+            RepositoryTarget(owner=org_name, name=repo_name)
+            for repo_name in repo_names
+        ]
+        timestamped_print(
+            f"Finished get_repos_by_language {time.time() - start_time:.2f} "
+            f"seconds for {len(repo_targets)} repositories",
+        )
+    repo_iterator = tqdm(repo_targets)
 
     if args["sprint_analysis"] or args["plot_sprint"]:
-        _handle_sprint_analysis(args, repo_names, start_time)
+        _handle_sprint_analysis(args, repo_iterator, start_time)
     else:
-        _handle_individual_analysis(args, repo_names, start_time)
+        _handle_individual_analysis(args, repo_iterator, start_time)
 
 
 def _handle_sprint_analysis(
     args: CommandLineArgs,
-    repo_names: tqdm,
+    repo_iterator: tqdm,
     start_time: float,
 ) -> None:
     """Handle sprint analysis mode."""
@@ -75,8 +93,7 @@ def _handle_sprint_analysis(
     sprint_stats: dict[str, dict[str, Any]] = {}
 
     process_context = ProcessRepositoriesContext(
-        org_name=args["org_name"],
-        repo_names=repo_names,
+        repositories=repo_iterator,
         start_date=args["start_date"],
         end_date=args["end_date"],
         start_time=start_time,
@@ -97,7 +114,7 @@ def _handle_sprint_analysis(
     if args["plot_sprint"]:
         plotting_context = SprintPlottingContext(
             team_metrics=team_metrics,
-            org_name=args["org_name"],
+            org_name=args["org_name"] or "",
             start_date=args["start_date"],
             end_date=args["end_date"],
             chart_type=args["chart_type"],
@@ -109,13 +126,12 @@ def _handle_sprint_analysis(
 
 def _handle_individual_analysis(
     args: CommandLineArgs,
-    repo_names: tqdm,
+    repo_iterator: tqdm,
     start_time: float,
 ) -> None:
     """Handle individual reviewer analysis mode."""
     process_context = ProcessRepositoriesContext(
-        org_name=args["org_name"],
-        repo_names=repo_names,
+        repositories=repo_iterator,
         start_date=args["start_date"],
         end_date=args["end_date"],
         start_time=start_time,

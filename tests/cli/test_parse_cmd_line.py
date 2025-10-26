@@ -1,5 +1,8 @@
+import tempfile
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
+from textwrap import dedent
 from typing import Any
 from unittest.mock import patch
 
@@ -7,12 +10,11 @@ from reviewtally.cli.parse_cmd_line import parse_cmd_line
 from reviewtally.exceptions.local_exceptions import MalformedDateError
 
 
-class TestParseCmdLineMalformedDates(unittest.TestCase):
-    """Test malformed date handling in parse_cmd_line function."""
+class ParseCmdLineTestCase(unittest.TestCase):
+    """Base class that patches shared dependencies."""
 
     def setUp(self) -> None:
-        """Set up test fixtures."""
-        # Mock successful version metadata to avoid import issues
+        """Set up common patches."""
         self.version_patcher = patch(
             "reviewtally.cli.parse_cmd_line.importlib.metadata.version",
         )
@@ -20,8 +22,12 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
         self.mock_version.return_value = "0.2.6"
 
     def tearDown(self) -> None:
-        """Clean up after tests."""
+        """Stop common patches."""
         self.version_patcher.stop()
+
+
+class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
+    """Test malformed date handling in parse_cmd_line function."""
 
     @patch("sys.exit")
     @patch("builtins.print")
@@ -212,8 +218,8 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
         # Assert
         mock_exit.assert_not_called()
         self.assertIsInstance(result, dict)
-        # Check it's the right type (14 original + 3 cache options = 17)
-        self.assertEqual(len(result), 17)
+        # Check result includes the expected CommandLineArgs keys
+        self.assertEqual(len(result), 18)
 
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
@@ -233,6 +239,7 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
             ["total_reviews", "total_comments"],
         )
         self.assertIsNone(result["save_plot"])
+        self.assertEqual(result["repositories"], [])
 
     @patch("sys.exit")
     @patch("sys.argv")
@@ -341,7 +348,7 @@ class TestParseCmdLineMalformedDates(unittest.TestCase):
         self.assertIn("Please use the format YYYY-MM-DD", printed_error)
 
 
-class TestParseCmdLineLanguageArgument(unittest.TestCase):
+class TestParseCmdLineLanguageArgument(ParseCmdLineTestCase):
     """Tests related to the --languages CLI option."""
 
     @patch("sys.exit")
@@ -374,5 +381,157 @@ class TestParseCmdLineLanguageArgument(unittest.TestCase):
         )
 
 
+class TestParseCmdLineValidation(ParseCmdLineTestCase):
+    """Additional validation scenarios for parse_cmd_line."""
+
+    @patch("sys.exit")
+    @patch("builtins.print")
+    @patch("sys.argv")
+    def test_missing_org_or_repositories_exits(
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
+    ) -> None:
+        """Ensure we require an org or repositories configuration."""
+        mock_argv.__getitem__.side_effect = lambda x: [
+            "review-tally",
+            "-s",
+            "2023-01-01",
+            "-e",
+            "2023-01-02",
+        ][x]
+        mock_argv.__len__.return_value = 5
+        mock_exit.side_effect = SystemExit
+
+        with self.assertRaises(SystemExit):
+            parse_cmd_line()
+
+        mock_exit.assert_called_once_with(1)
+        mock_print.assert_called_once()
+        self.assertIn(
+            "Provide an organization (--org) or configure repositories.",
+            str(mock_print.call_args[0][0]),
+        )
+
+
+class TestParseCmdLineConfiguration(ParseCmdLineTestCase):
+    """Tests for TOML configuration support."""
+
+    @patch("sys.exit")
+    @patch("sys.argv")
+    def test_config_file_parses_options(
+        self,
+        mock_argv: Any,
+        mock_exit: Any,
+    ) -> None:
+        """Configuration file should populate command values."""
+        config_contents = dedent(
+            """
+            start_date = 2023-01-01
+            end_date = 2023-01-15
+            languages = ["Python", " TypeScript "]
+            metrics = ["reviews", "comments"]
+            sprint_analysis = true
+            output_path = "sprint.csv"
+            plot_sprint = true
+            chart_type = "line"
+            chart_metrics = ["total_reviews"]
+            save_plot = "plot.html"
+            no_cache = true
+            clear_cache = true
+            clear_expired_cache = true
+            cache_stats = true
+            repositories = ["octocat/hello-world", "cli/review-tally"]
+            """,
+        )
+
+        with tempfile.NamedTemporaryFile(
+            "w",
+            suffix=".toml",
+            delete=False,
+        ) as tmp:
+            tmp.write(config_contents)
+            tmp_path = Path(tmp.name)
+
+        try:
+            mock_argv.__getitem__.side_effect = lambda x: [
+                "review-tally",
+                "--config",
+                str(tmp_path),
+            ][x]
+            mock_argv.__len__.return_value = 3
+
+            result = parse_cmd_line()
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+        mock_exit.assert_not_called()
+        self.assertIsNone(result["org_name"])
+        self.assertEqual(
+            result["start_date"],
+            datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        self.assertEqual(
+            result["end_date"],
+            datetime(2023, 1, 15, tzinfo=timezone.utc),
+        )
+        self.assertEqual(result["languages"], ["python", "typescript"])
+        self.assertEqual(result["metrics"], ["reviews", "comments"])
+        self.assertTrue(result["sprint_analysis"])
+        self.assertEqual(result["output_path"], "sprint.csv")
+        self.assertTrue(result["plot_sprint"])
+        self.assertEqual(result["chart_type"], "line")
+        self.assertEqual(result["chart_metrics"], ["total_reviews"])
+        self.assertEqual(result["save_plot"], "plot.html")
+        self.assertFalse(result["plot_individual"])
+        self.assertEqual(result["individual_chart_metric"], "reviews")
+        self.assertFalse(result["use_cache"])
+        self.assertTrue(result["clear_cache"])
+        self.assertTrue(result["clear_expired_cache"])
+        self.assertTrue(result["show_cache_stats"])
+        self.assertEqual(
+            result["repositories"],
+            ["octocat/hello-world", "cli/review-tally"],
+        )
+
+    @patch("sys.exit")
+    @patch("builtins.print")
+    @patch("sys.argv")
+    def test_invalid_repository_format_exits(
+        self,
+        mock_argv: Any,
+        mock_print: Any,
+        mock_exit: Any,
+    ) -> None:
+        """Invalid repository definitions should raise an error."""
+        with tempfile.NamedTemporaryFile(
+            "w",
+            suffix=".toml",
+            delete=False,
+        ) as tmp:
+            tmp.write('repositories = ["invalid"]\n')
+            tmp_path = Path(tmp.name)
+
+        mock_argv.__getitem__.side_effect = lambda x: [
+            "review-tally",
+            "--config",
+            str(tmp_path),
+        ][x]
+        mock_argv.__len__.return_value = 3
+        mock_exit.side_effect = SystemExit
+
+        try:
+            with self.assertRaises(SystemExit):
+                parse_cmd_line()
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+        mock_exit.assert_called_once_with(1)
+        mock_print.assert_called_once()
+        self.assertIn(
+            "Invalid repository entry",
+            str(mock_print.call_args[0][0]),
+        )
 if __name__ == "__main__":
     unittest.main()
