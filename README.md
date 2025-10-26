@@ -82,6 +82,12 @@ Specifying the time frame:
 review-tally -o expressjs -l javascript -s 2021-01-01 -e 2021-01-31
 ```
 
+You can use the long-form flags as well (note the hyphenated names):
+
+```bash
+review-tally -o expressjs -l javascript --start-date 2021-01-01 --end-date 2021-01-31
+```
+
 Customizing metrics displayed:
 ```bash
 review-tally -o expressjs -l javascript -m reviews,engagement,thoroughness
@@ -161,15 +167,15 @@ review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_d
 
 ## Options
 
-* -o, --organization The Github organization that you want to query
-* -l, --languages  A comma separated list of languages that you want to include
+* -o, --org The GitHub organization that you want to query
+* -l, --language  A comma separated list of languages that you want to include
 * -s, --start-date The start date for the time frame that you want to query (optional)
 * -e, --end-date The end date for the time frame that you want to query (optional)
 * -m, --metrics Comma-separated list of metrics to display (reviews,comments,avg-comments,engagement,thoroughness). Default: reviews,comments,avg-comments
 * -h, --help Show this message and exit
 * -v, --version Show the version of the tool
 * --sprint-analysis selects the sprint analysis option
-* --output-path specifices the output file for sprint analysis
+* --output-path specifies the output file for sprint analysis
 * --plot-sprint Generate interactive charts showing sprint metrics (opens in browser)
 * --chart-type Chart type for sprint metrics (bar or line). Default: bar
 * --chart-metrics Comma-separated sprint metrics to plot. Default: total_reviews,total_comments. Available: total_reviews,total_comments,unique_reviewers,avg_comments_per_review,reviews_per_reviewer,avg_response_time_hours,avg_completion_time_hours,active_review_days
@@ -177,6 +183,9 @@ review-tally -o expressjs -l javascript --plot-individual --save-plot reviewer_d
 * --plot-individual Generate pie charts showing individual reviewer metric distribution (opens in browser)
 * --individual-chart-metric Metric to visualize in individual pie chart. Default: reviews. Available: reviews,comments,engagement_level,thoroughness_score,avg_response_time_hours,avg_completion_time_hours,active_review_days
 * --no-cache Disable PR review caching (always fetch fresh data from API). By default, caching is enabled for better performance.
+* --clear-cache Clear all cached pull request data and exit
+* --clear-expired-cache Clear only expired cached data and exit
+* --cache-stats Show cache statistics and exit
 
 ## GitHub API Rate Limiting
 
