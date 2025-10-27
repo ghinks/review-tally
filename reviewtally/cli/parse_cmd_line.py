@@ -9,12 +9,14 @@ import importlib.metadata
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from collections.abc import Iterable
-from typing import NoReturn, TypedDict
+from typing import TYPE_CHECKING, NoReturn, TypedDict
 
 import tomllib
 
 from reviewtally.exceptions.local_exceptions import MalformedDateError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class CommandLineArgs(TypedDict):
@@ -319,20 +321,20 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     if args.start_date is not None:
         start_date_source = args.start_date
     else:
-        start_date_source = config.get("start_date")
+        start_date_source = config.get("start-date")
     start_date = _parse_date_value(
         start_date_source,
         fallback=two_weeks_ago,
-        field_name="start_date",
+        field_name="start-date",
     )
     if args.end_date is not None:
         end_date_source = args.end_date
     else:
-        end_date_source = config.get("end_date")
+        end_date_source = config.get("end-date")
     end_date = _parse_date_value(
         end_date_source,
         fallback=today,
-        field_name="end_date",
+        field_name="end-date",
     )
 
     if start_date > end_date:
@@ -360,11 +362,11 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     chart_metrics_input = (
         args.chart_metrics
         if args.chart_metrics is not None
-        else config.get("chart_metrics")
+        else config.get("chart-metrics")
     )
     chart_metrics_specified = chart_metrics_input is not None
     chart_metrics = (
-        _parse_sequence(chart_metrics_input, "chart_metrics")
+        _parse_sequence(chart_metrics_input, "chart-metrics")
         if chart_metrics_input is not None
         else []
     )
@@ -373,18 +375,18 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
 
     chart_type_input = args.chart_type
     if chart_type_input is None:
-        chart_type_input = _get_optional_str(config, "chart_type")
+        chart_type_input = _get_optional_str(config, "chart-type")
     if (
         chart_type_input is not None
         and chart_type_input not in ALLOWED_CHART_TYPES
     ):
-        _config_error("chart_type must be one of: bar, line")
+        _config_error("chart-type must be one of: bar, line")
     chart_type = chart_type_input or DEFAULT_CHART_TYPE
 
     individual_chart_metric_input = (
         args.individual_chart_metric
         if args.individual_chart_metric is not None
-        else _get_optional_str(config, "individual_chart_metric")
+        else _get_optional_str(config, "individual-chart-metric")
     )
     individual_metric_specified = individual_chart_metric_input is not None
     if (
@@ -393,7 +395,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     ):
         allowed_metrics = ", ".join(sorted(ALLOWED_INDIVIDUAL_METRICS))
         _config_error(
-            "individual_chart_metric must be one of: "
+            "individual-chart-metric must be one of: "
             f"{allowed_metrics}",
         )
     individual_chart_metric = (
@@ -402,15 +404,15 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
 
     sprint_analysis = bool(args.sprint_analysis) or _get_config_bool(
         config,
-        "sprint_analysis",
+        "sprint-analysis",
     )
     plot_sprint = bool(args.plot_sprint) or _get_config_bool(
         config,
-        "plot_sprint",
+        "plot-sprint",
     )
     plot_individual = bool(args.plot_individual) or _get_config_bool(
         config,
-        "plot_individual",
+        "plot-individual",
     )
 
     if plot_sprint and plot_individual:
@@ -430,30 +432,30 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
 
     save_plot = args.save_plot
     if save_plot is None:
-        save_plot = _get_optional_str(config, "save_plot")
+        save_plot = _get_optional_str(config, "save-plot")
 
     output_path = args.output_path
     if output_path is None:
-        output_path = _get_optional_str(config, "output_path")
+        output_path = _get_optional_str(config, "output-path")
 
     use_cache = not (
         args.no_cache
         or _get_config_bool(
             config,
-            "no_cache",
+            "no-cache",
         )
     )
     clear_cache = bool(args.clear_cache) or _get_config_bool(
         config,
-        "clear_cache",
+        "clear-cache",
     )
     clear_expired_cache = bool(args.clear_expired_cache) or _get_config_bool(
         config,
-        "clear_expired_cache",
+        "clear-expired-cache",
     )
     show_cache_stats = bool(args.cache_stats) or _get_config_bool(
         config,
-        "cache_stats",
+        "cache-stats",
     )
 
     repositories = _parse_repositories(config.get("repositories"))

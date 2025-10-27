@@ -190,7 +190,7 @@ review-tally -o expressjs --languages javascript --plot-individual --save-plot r
 
 ## Configuration files
 
-You can provide all CLI options via a TOML configuration file by passing the `--config` flag. Each setting uses the same name as
+You can provide all CLI options via a TOML configuration file by passing the `--config` flag. Each setting uses the same name (with dashes) as
 its corresponding long-form CLI option, and command line values continue to override anything defined in the file. In addition
 to the existing switches, configuration files support a `repositories` list that lets you target specific repositories without
 providing an organization. Repositories must be defined in `owner/repository-name` format.
@@ -199,24 +199,24 @@ Example configuration:
 
 ```toml
 # basic time window and filters
-start_date = "2023-01-01"
-end_date = "2023-01-15"
+start-date = "2023-01-01"
+end-date = "2023-01-15"
 languages = ["python", "javascript"]
 metrics = ["reviews", "comments"]
 
 # sprint analysis output and plotting
-sprint_analysis = true
-output_path = "sprint.csv"
-plot_sprint = true
-chart_type = "line"
-chart_metrics = ["total_reviews", "unique_reviewers"]
-save_plot = "sprint_plot.html"
+sprint-analysis = true
+output-path = "sprint.csv"
+plot-sprint = true
+chart-type = "line"
+chart-metrics = ["total_reviews", "unique_reviewers"]
+save-plot = "sprint_plot.html"
 
 # caching controls
-no_cache = true
-clear_cache = true
-clear_expired_cache = true
-cache_stats = true
+no-cache = true
+clear-cache = true
+clear-expired-cache = true
+cache-stats = true
 
 # repositories to process (no --org needed)
 repositories = [

@@ -428,20 +428,20 @@ class TestParseCmdLineConfiguration(ParseCmdLineTestCase):
         """Configuration file should populate command values."""
         config_contents = dedent(
             """
-            start_date = 2023-01-01
-            end_date = 2023-01-15
+            start-date = 2023-01-01
+            end-date = 2023-01-15
             languages = ["Python", " TypeScript "]
             metrics = ["reviews", "comments"]
-            sprint_analysis = true
-            output_path = "sprint.csv"
-            plot_sprint = true
-            chart_type = "line"
-            chart_metrics = ["total_reviews"]
-            save_plot = "plot.html"
-            no_cache = true
-            clear_cache = true
-            clear_expired_cache = true
-            cache_stats = true
+            sprint-analysis = true
+            output-path = "sprint.csv"
+            plot-sprint = true
+            chart-type = "line"
+            chart-metrics = ["total_reviews"]
+            save-plot = "plot.html"
+            no-cache = true
+            clear-cache = true
+            clear-expired-cache = true
+            cache-stats = true
             repositories = ["octocat/hello-world", "cli/review-tally"]
             """,
         )
