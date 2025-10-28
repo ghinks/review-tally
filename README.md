@@ -167,6 +167,7 @@ review-tally -o expressjs --languages javascript --plot-individual --save-plot r
 
 ## Options
 
+* -c, --config Path to a TOML configuration file containing CLI options
 * -o, --org The GitHub organization that you want to query
 * -l, --languages  A comma separated list of languages that you want to include
 * -s, --start-date The start date for the time frame that you want to query (optional)
@@ -186,6 +187,45 @@ review-tally -o expressjs --languages javascript --plot-individual --save-plot r
 * --clear-cache Clear all cached pull request data and exit
 * --clear-expired-cache Clear only expired cached data and exit
 * --cache-stats Show cache statistics and exit
+
+## Configuration files
+
+You can provide all CLI options via a TOML configuration file by passing the `--config` flag. Each setting uses the same name (with dashes) as
+its corresponding long-form CLI option, and command line values continue to override anything defined in the file. In addition
+to the existing switches, configuration files support a `repositories` list that lets you target specific repositories without
+providing an organization. Repositories must be defined in `owner/repository-name` format.
+
+Example configuration:
+
+```toml
+# basic time window and filters
+start-date = "2023-01-01"
+end-date = "2023-01-15"
+languages = ["python", "javascript"]
+metrics = ["reviews", "comments"]
+
+# sprint analysis output and plotting
+sprint-analysis = true
+output-path = "sprint.csv"
+plot-sprint = true
+chart-type = "line"
+chart-metrics = ["total_reviews", "unique_reviewers"]
+save-plot = "sprint_plot.html"
+
+# caching controls
+no-cache = true
+clear-cache = true
+clear-expired-cache = true
+cache-stats = true
+
+# repositories to process (no --org needed)
+repositories = [
+  "octocat/hello-world",
+  "cli/review-tally",
+]
+```
+
+When `repositories` is supplied the tool skips organization discovery and queries each repository owner pair directly.
 
 ## GitHub API Rate Limiting
 

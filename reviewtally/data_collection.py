@@ -40,12 +40,19 @@ class ReviewDataContext:
     use_cache: bool = True
 
 
+@dataclass(frozen=True)
+class RepositoryTarget:
+    """Target repository information."""
+
+    owner: str
+    name: str
+
+
 @dataclass
 class ProcessRepositoriesContext:
     """Context object for repository processing."""
 
-    org_name: str
-    repo_names: tqdm
+    repositories: tqdm[RepositoryTarget]
     start_date: datetime
     end_date: datetime
     start_time: float
@@ -175,10 +182,12 @@ def process_repositories(
 ) -> dict[str, dict[str, Any]]:
     reviewer_stats: dict[str, dict[str, Any]] = {}
 
-    for repo in context.repo_names:
-        timestamped_print(f"Processing {repo}")
+    for repo_target in context.repositories:
+        owner = repo_target.owner
+        repo = repo_target.name
+        timestamped_print(f"Processing {owner}/{repo}")
         pull_requests = get_pull_requests_between_dates(
-            context.org_name,
+            owner,
             repo,
             context.start_date,
             context.end_date,
@@ -189,11 +198,11 @@ def process_repositories(
             f"{time.time() - context.start_time:.2f} seconds for "
             f"{len(pull_requests)} pull requests",
         )
-        context.repo_names.set_description(
-            f"Processing {context.org_name}/{repo}",
+        context.repositories.set_description(
+            f"Processing {owner}/{repo}",
         )
         review_context = ReviewDataContext(
-            org_name=context.org_name,
+            org_name=owner,
             repo=repo,
             pull_requests=pull_requests,
             reviewer_stats=reviewer_stats,
