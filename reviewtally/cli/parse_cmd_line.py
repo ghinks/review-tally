@@ -61,13 +61,11 @@ ALLOWED_INDIVIDUAL_METRICS = {
 
 def _normalize_metric_identifier(value: str) -> str:
     """Convert CLI-provided metric identifiers to internal snake_case."""
-
     return value.replace("-", "_")
 
 
 def _format_cli_metric_identifier(value: str) -> str:
     """Expose internal metric identifiers as CLI-friendly names."""
-
     return value.replace("_", "-")
 
 
@@ -408,7 +406,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
     if individual_chart_metric_input is not None:
         individual_chart_metric_input = _normalize_metric_identifier(
-            individual_chart_metric_input
+            individual_chart_metric_input,
         )
     individual_metric_specified = individual_chart_metric_input is not None
     if (

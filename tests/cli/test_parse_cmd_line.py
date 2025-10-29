@@ -422,7 +422,6 @@ class TestParseCmdLineValidation(ParseCmdLineTestCase):
         mock_exit: Any,
     ) -> None:
         """Hyphenated metric values from CLI are normalized to snake_case."""
-
         mock_argv.__getitem__.side_effect = lambda x: [
             "review-tally",
             "--org",
