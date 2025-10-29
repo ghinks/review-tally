@@ -111,7 +111,7 @@ review-tally -o expressjs --languages javascript --plot-sprint
 
 ### Plotting with custom chart type and metrics:
 ```shell
-review-tally -o expressjs --languages javascript --plot-sprint --chart-type line --chart-metrics total_reviews,unique_reviewers
+review-tally -o expressjs --languages javascript --plot-sprint --chart-type line --chart-metrics total-reviews,unique-reviewers
 ```
 
 ### Saving the plot to a file:
@@ -179,7 +179,7 @@ review-tally -o expressjs --languages javascript --plot-individual --save-plot r
 * --output-path specifies the output file for sprint analysis
 * --plot-sprint Generate interactive charts showing sprint metrics (opens in browser)
 * --chart-type Chart type for sprint metrics (bar or line). Default: bar
-* --chart-metrics Comma-separated sprint metrics to plot. Default: total_reviews,total_comments. Available: total_reviews,total_comments,unique_reviewers,avg_comments_per_review,reviews_per_reviewer,avg_response_time_hours,avg_completion_time_hours,active_review_days
+* --chart-metrics Comma-separated sprint metrics to plot. Default: total_reviews,total_comments. Available: total-reviews,total-comments,unique-reviewers,avg-comments-per-review,reviews-per-reviewer,avg-response-time-hours,avg-completion-time-hours,active-review-days
 * --save-plot Optional path to save the interactive HTML chart
 * --plot-individual Generate pie charts showing individual reviewer metric distribution (opens in browser)
 * --individual-chart-metric Metric to visualize in individual pie chart. Default: reviews. Available: reviews,comments,engagement_level,thoroughness_score,avg_response_time_hours,avg_completion_time_hours,active_review_days

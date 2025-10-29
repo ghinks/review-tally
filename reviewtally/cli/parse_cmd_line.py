@@ -59,6 +59,16 @@ ALLOWED_INDIVIDUAL_METRICS = {
 }
 
 
+def _normalize_metric_identifier(value: str) -> str:
+    """Convert CLI-provided metric identifiers to internal snake_case."""
+    return value.replace("-", "_")
+
+
+def _format_cli_metric_identifier(value: str) -> str:
+    """Expose internal metric identifiers as CLI-friendly names."""
+    return value.replace("_", "-")
+
+
 def print_toml_version() -> None:
     version = importlib.metadata.version("review-tally")
     print(f"Current version is {version}")  # noqa: T201
@@ -253,10 +263,10 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         "--chart-metrics",
         help=(
             "Comma-separated sprint metrics to plot. "
-            "Supported: total_reviews,total_comments,unique_reviewers,"
-            "avg_comments_per_review,reviews_per_reviewer,"
-            "avg_response_time_hours,avg_completion_time_hours,"
-            "active_review_days"
+            "Supported: total-reviews,total-comments,unique-reviewers,"
+            "avg-comments-per-review,reviews-per-reviewer,"
+            "avg-response-time-hours,avg-completion-time-hours,"
+            "active-review-days"
         ),
     )
     parser.add_argument(
@@ -274,7 +284,10 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
     parser.add_argument(
         "--individual-chart-metric",
-        choices=sorted(ALLOWED_INDIVIDUAL_METRICS),
+        choices=sorted(
+            _format_cli_metric_identifier(metric)
+            for metric in ALLOWED_INDIVIDUAL_METRICS
+        ),
         help="Metric to visualize in individual pie chart",
     )
 
@@ -370,6 +383,9 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         if chart_metrics_input is not None
         else []
     )
+    chart_metrics = [
+        _normalize_metric_identifier(metric) for metric in chart_metrics
+    ]
     if not chart_metrics:
         chart_metrics = list(DEFAULT_CHART_METRICS)
 
@@ -388,6 +404,10 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         if args.individual_chart_metric is not None
         else _get_optional_str(config, "individual-chart-metric")
     )
+    if individual_chart_metric_input is not None:
+        individual_chart_metric_input = _normalize_metric_identifier(
+            individual_chart_metric_input,
+        )
     individual_metric_specified = individual_chart_metric_input is not None
     if (
         individual_chart_metric_input is not None
