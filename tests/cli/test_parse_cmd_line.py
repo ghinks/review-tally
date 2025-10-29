@@ -414,6 +414,38 @@ class TestParseCmdLineValidation(ParseCmdLineTestCase):
             str(mock_print.call_args[0][0]),
         )
 
+    @patch("sys.exit")
+    @patch("sys.argv")
+    def test_hyphenated_metric_arguments_normalized(
+        self,
+        mock_argv: Any,
+        mock_exit: Any,
+    ) -> None:
+        """Hyphenated metric values from CLI are normalized to snake_case."""
+
+        mock_argv.__getitem__.side_effect = lambda x: [
+            "review-tally",
+            "--org",
+            "test-org",
+            "--chart-metrics",
+            "total-reviews,avg-response-time-hours",
+            "--individual-chart-metric",
+            "thoroughness-score",
+        ][x]
+        mock_argv.__len__.return_value = 7
+
+        result = parse_cmd_line()
+
+        mock_exit.assert_not_called()
+        self.assertEqual(
+            result["chart_metrics"],
+            ["total_reviews", "avg_response_time_hours"],
+        )
+        self.assertEqual(
+            result["individual_chart_metric"],
+            "thoroughness_score",
+        )
+
 
 class TestParseCmdLineConfiguration(ParseCmdLineTestCase):
     """Tests for TOML configuration support."""
