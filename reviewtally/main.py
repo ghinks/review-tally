@@ -20,6 +20,7 @@ from reviewtally.data_collection import (
 from reviewtally.exporters.sprint_export import export_sprint_csv
 from reviewtally.metrics_calculation import calculate_reviewer_metrics
 from reviewtally.output_formatting import generate_results_table
+from reviewtally.queries import set_github_host
 from reviewtally.queries.get_repos_gql import get_repos
 from reviewtally.visualization.individual_plot import (
     SUPPORTED_INDIVIDUAL_METRICS,
@@ -34,6 +35,7 @@ def main() -> None:
 
     # Parse command line arguments
     args = parse_cmd_line()
+    set_github_host(args["github_host"])
 
     # Handle cache management operations
     if (

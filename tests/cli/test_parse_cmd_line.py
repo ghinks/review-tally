@@ -219,7 +219,7 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
         mock_exit.assert_not_called()
         self.assertIsInstance(result, dict)
         # Check result includes the expected CommandLineArgs keys
-        self.assertEqual(len(result), 18)
+        self.assertEqual(len(result), 19)
 
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
@@ -240,6 +240,33 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
         )
         self.assertIsNone(result["save_plot"])
         self.assertEqual(result["repositories"], [])
+        self.assertEqual(result["github_host"], "api.github.com")
+
+    @patch("sys.exit")
+    @patch("sys.argv")
+    def test_github_host_cli_override(
+        self,
+        mock_argv: Any,
+        mock_exit: Any,
+    ) -> None:
+        """CLI flag should override the default GitHub host."""
+        mock_argv.__getitem__.side_effect = lambda x: [
+            "review-tally",
+            "-o",
+            "test-org",
+            "--github-host",
+            " ghe.example.com/api/v3 ",
+            "-s",
+            "2023-01-01",
+            "-e",
+            "2023-01-15",
+        ][x]
+        mock_argv.__len__.return_value = 9
+
+        result = parse_cmd_line()
+
+        mock_exit.assert_not_called()
+        self.assertEqual(result["github_host"], "ghe.example.com/api/v3")
 
     @patch("sys.exit")
     @patch("sys.argv")

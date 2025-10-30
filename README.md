@@ -173,6 +173,7 @@ review-tally -o expressjs --languages javascript --plot-individual --save-plot r
 * -s, --start-date The start date for the time frame that you want to query (optional)
 * -e, --end-date The end date for the time frame that you want to query (optional)
 * -m, --metrics Comma-separated list of metrics to display (reviews,comments,avg-comments,engagement,thoroughness). Default: reviews,comments,avg-comments
+* --github-host Base host used for GitHub API requests. Defaults to api.github.com
 * -h, --help Show this message and exit
 * -v, --version Show the version of the tool
 * --sprint-analysis selects the sprint analysis option
@@ -203,6 +204,7 @@ start-date = "2023-01-01"
 end-date = "2023-01-15"
 languages = ["python", "javascript"]
 metrics = ["reviews", "comments"]
+github-host = "https://ghe.example.com/api/v3"
 
 # sprint analysis output and plotting
 sprint-analysis = true
@@ -226,6 +228,8 @@ repositories = [
 ```
 
 When `repositories` is supplied the tool skips organization discovery and queries each repository owner pair directly.
+
+Set `github-host` when targeting GitHub Enterprise; include any required path segments (for example `https://ghe.example.com/api/v3`).
 
 ## GitHub API Rate Limiting
 

@@ -1,7 +1,9 @@
 import os
 import ssl
+from typing import Optional
 
 import aiohttp
+from urllib.parse import urljoin
 
 from reviewtally.exceptions.local_exceptions import GitHubTokenNotDefinedError
 
@@ -47,6 +49,48 @@ CONNECTION_ENABLE_CLEANUP = True  # Enable automatic connection cleanup
 
 # Repository filtering configuration
 MAX_PR_COUNT = 100000  # Skip repositories with more PRs than this threshold
+
+# Base GitHub host configuration
+DEFAULT_GITHUB_HOST = "https://api.github.com"
+_github_host = DEFAULT_GITHUB_HOST
+
+
+def _normalize_github_host(host: Optional[str]) -> str:
+    """Normalise a user-provided GitHub host value."""
+
+    if host is None:
+        return DEFAULT_GITHUB_HOST
+
+    trimmed = host.strip()
+    if not trimmed:
+        return DEFAULT_GITHUB_HOST
+
+    if not trimmed.startswith(("http://", "https://")):
+        trimmed = f"https://{trimmed}"
+
+    # Avoid double slashes when joining paths later
+    return trimmed.rstrip("/")
+
+
+def set_github_host(host: Optional[str]) -> None:
+    """Update the base host used for GitHub API requests."""
+
+    global _github_host
+    _github_host = _normalize_github_host(host)
+
+
+def get_github_host() -> str:
+    """Return the currently configured GitHub API host."""
+
+    return _github_host
+
+
+def build_github_api_url(path: str) -> str:
+    """Build a GitHub API URL using the configured host."""
+
+    base = f"{get_github_host()}/"
+    normalized_path = path.lstrip("/")
+    return urljoin(base, normalized_path)
 
 
 def require_github_token() -> str:
