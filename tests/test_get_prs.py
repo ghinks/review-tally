@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 from reviewtally.exceptions.local_exceptions import PaginationError
-from reviewtally.queries import build_github_api_url, set_github_host
+from reviewtally.queries import build_github_rest_api_url, set_github_host
 from reviewtally.queries.get_prs import get_pull_requests_between_dates
 
 
@@ -131,7 +131,7 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
 
         get_pull_requests_between_dates("test", "repo", start_date, end_date)
 
-        expected_url = build_github_api_url("search/issues")
+        expected_url = build_github_rest_api_url("search/issues")
         called_url = mock_get.call_args.args[0]
         self.assertEqual(called_url, expected_url)
 

@@ -85,12 +85,24 @@ def get_github_host() -> str:
     return _github_host
 
 
-def build_github_api_url(path: str) -> str:
-    """Build a GitHub API URL using the configured host."""
+def _build_github_url(path: str) -> str:
+    """Build a GitHub URL relative to the configured host."""
 
     base = f"{get_github_host()}/"
     normalized_path = path.lstrip("/")
     return urljoin(base, normalized_path)
+
+
+def build_github_rest_api_url(path: str) -> str:
+    """Build a REST API URL using the configured host."""
+
+    return _build_github_url(path)
+
+
+def get_github_graphql_url() -> str:
+    """Return the configured GitHub GraphQL endpoint URL."""
+
+    return _build_github_url("graphql")
 
 
 def require_github_token() -> str:

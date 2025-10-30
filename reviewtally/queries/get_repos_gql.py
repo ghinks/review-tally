@@ -12,7 +12,7 @@ from reviewtally.exceptions.local_exceptions import (
 from reviewtally.queries import (
     GRAPHQL_TIMEOUT,
     MAX_PR_COUNT,
-    build_github_api_url,
+    get_github_graphql_url,
     require_github_token,
 )
 
@@ -27,7 +27,7 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
     # check for github_token and raise an exception if it
     # is not defined
     github_token = require_github_token()
-    url = build_github_api_url("graphql")
+    url = get_github_graphql_url()
     headers = {
         "Authorization": f"Bearer {github_token}",
         "Content-Type": "application/json",
