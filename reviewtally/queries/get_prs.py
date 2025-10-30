@@ -21,6 +21,7 @@ from reviewtally.queries import (
     MAX_BACKOFF,
     MAX_RETRIES,
     RETRYABLE_STATUS_CODES,
+    build_github_rest_api_url,
     require_github_token,
 )
 
@@ -120,7 +121,7 @@ def fetch_pull_requests_from_github(
     end_date: datetime,
 ) -> tuple[list[dict], bool]:
     # Use GitHub Search Issues API for native date filtering
-    url = "https://api.github.com/search/issues"
+    url = build_github_rest_api_url("search/issues")
     github_token = require_github_token()
     headers = {
         "Authorization": f"Bearer {github_token}",

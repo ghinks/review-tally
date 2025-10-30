@@ -4,9 +4,8 @@ from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 from reviewtally.exceptions.local_exceptions import PaginationError
-from reviewtally.queries.get_prs import (
-    get_pull_requests_between_dates,
-)
+from reviewtally.queries import build_github_rest_api_url, set_github_host
+from reviewtally.queries.get_prs import get_pull_requests_between_dates
 
 
 class TestGetPullRequestsBetweenDates(unittest.TestCase):
@@ -114,6 +113,27 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
 
         with self.assertRaises(PaginationError):
             get_pull_requests_between_dates(owner, repo, start_date, end_date)
+
+    @patch("requests.get")
+    @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
+    def test_fetch_uses_configured_host(self, mock_get) -> None:  # noqa: ANN001
+        set_github_host("https://ghe.example.com/api/v3")
+        self.addCleanup(set_github_host, None)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {"items": []}
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_get.return_value = mock_response
+
+        start_date = datetime(2023, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2023, 1, 2, tzinfo=timezone.utc)
+
+        get_pull_requests_between_dates("test", "repo", start_date, end_date)
+
+        expected_url = build_github_rest_api_url("search/issues")
+        called_url = mock_get.call_args.args[0]
+        self.assertEqual(called_url, expected_url)
 
 
 if __name__ == "__main__":
