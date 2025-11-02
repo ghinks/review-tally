@@ -28,6 +28,8 @@ class CommandLineArgs(TypedDict):
     languages: list[str]
     metrics: list[str]
     github_host: str
+    github_rest_path: str | None
+    github_graphql_path: str | None
     sprint_analysis: bool
     output_path: str | None
     plot_sprint: bool
@@ -225,6 +227,22 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         help=(
             "Base host used for GitHub API requests. "
             "Defaults to api.github.com"
+        ),
+    )
+    parser.add_argument(
+        "--github-rest-path",
+        dest="github_rest_path",
+        help=(
+            "Optional base path appended to REST API requests. "
+            "Defaults to none or the path embedded in --github-host"
+        ),
+    )
+    parser.add_argument(
+        "--github-graphql-path",
+        dest="github_graphql_path",
+        help=(
+            "Optional path to the GraphQL endpoint. "
+            "Defaults to /graphql or mirrors the REST path"
         ),
     )
     metrics_help = (
@@ -496,6 +514,34 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     if not github_host:
         github_host = "api.github.com"
 
+    github_rest_path_input = args.github_rest_path
+    if github_rest_path_input is None:
+        github_rest_path_input = _get_optional_str(
+            config,
+            "github-rest-path",
+        )
+    github_rest_path: str | None
+    if github_rest_path_input is None:
+        github_rest_path = None
+    else:
+        github_rest_path = github_rest_path_input.strip()
+        if not github_rest_path:
+            github_rest_path = ""
+
+    github_graphql_path_input = args.github_graphql_path
+    if github_graphql_path_input is None:
+        github_graphql_path_input = _get_optional_str(
+            config,
+            "github-graphql-path",
+        )
+    github_graphql_path: str | None
+    if github_graphql_path_input is None:
+        github_graphql_path = None
+    else:
+        github_graphql_path = github_graphql_path_input.strip()
+        if not github_graphql_path:
+            github_graphql_path = ""
+
     if org_name is None and not repositories:
         error_msg = (
             "Error: Provide an organization (--org) "
@@ -511,6 +557,8 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         languages=languages,
         metrics=metrics,
         github_host=github_host,
+        github_rest_path=github_rest_path,
+        github_graphql_path=github_graphql_path,
         sprint_analysis=sprint_analysis,
         output_path=output_path,
         plot_sprint=plot_sprint,

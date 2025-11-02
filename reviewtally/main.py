@@ -35,7 +35,11 @@ def main() -> None:
 
     # Parse command line arguments
     args = parse_cmd_line()
-    set_github_host(args["github_host"])
+    set_github_host(
+        args["github_host"],
+        rest_path=args["github_rest_path"],
+        graphql_path=args["github_graphql_path"],
+    )
 
     # Handle cache management operations
     if (

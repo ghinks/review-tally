@@ -219,7 +219,7 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
         mock_exit.assert_not_called()
         self.assertIsInstance(result, dict)
         # Check result includes the expected CommandLineArgs keys
-        self.assertEqual(len(result), 19)
+        self.assertEqual(len(result), 21)
 
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
@@ -241,6 +241,8 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
         self.assertIsNone(result["save_plot"])
         self.assertEqual(result["repositories"], [])
         self.assertEqual(result["github_host"], "api.github.com")
+        self.assertIsNone(result["github_rest_path"])
+        self.assertIsNone(result["github_graphql_path"])
 
     @patch("sys.exit")
     @patch("sys.argv")
@@ -267,6 +269,38 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
 
         mock_exit.assert_not_called()
         self.assertEqual(result["github_host"], "ghe.example.com/api/v3")
+        self.assertIsNone(result["github_rest_path"])
+        self.assertIsNone(result["github_graphql_path"])
+
+    @patch("sys.exit")
+    @patch("sys.argv")
+    def test_github_api_path_cli_overrides(
+        self,
+        mock_argv: Any,
+        mock_exit: Any,
+    ) -> None:
+        """REST and GraphQL paths can be overridden independently."""
+        mock_argv.__getitem__.side_effect = lambda x: [
+            "review-tally",
+            "-o",
+            "test-org",
+            "--github-rest-path",
+            " /api/v3/ ",
+            "--github-graphql-path",
+            " api/graphql ",
+            "-s",
+            "2023-01-01",
+            "-e",
+            "2023-01-15",
+        ][x]
+        mock_argv.__len__.return_value = 11
+
+        result = parse_cmd_line()
+
+        mock_exit.assert_not_called()
+        self.assertEqual(result["github_host"], "api.github.com")
+        self.assertEqual(result["github_rest_path"], "/api/v3/")
+        self.assertEqual(result["github_graphql_path"], "api/graphql")
 
     @patch("sys.exit")
     @patch("sys.argv")
