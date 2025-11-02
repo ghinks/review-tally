@@ -21,6 +21,7 @@ from reviewtally.queries import (
     MAX_RETRIES,
     RETRYABLE_STATUS_CODES,
     SSL_CONTEXT,
+    build_github_rest_api_url,
     require_github_token,
 )
 
@@ -186,8 +187,9 @@ def get_reviewers_for_pull_requests(
 ) -> list[dict]:
     token = github_token or require_github_token()
     urls = [
-        f"https://api.github.com/repos/{owner}/{repo}"
-        f"/pulls/{pull_number}/reviews"
+        build_github_rest_api_url(
+            f"repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+        )
         for pull_number in pull_numbers
     ]
     reviewers = asyncio.run(fetch_batch(urls, github_token=token))
@@ -227,8 +229,9 @@ def _fetch_review_metadata(
 ) -> list[dict]:
     """Fetch reviews and collect metadata with comment URLs."""
     review_urls = [
-        f"https://api.github.com/repos/{owner}/{repo}"
-        f"/pulls/{pull_number}/reviews"
+        build_github_rest_api_url(
+            f"repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+        )
         for pull_number in uncached_prs
     ]
     reviews_response = asyncio.run(
@@ -243,10 +246,11 @@ def _fetch_review_metadata(
             user = review["user"]
             review_id = review["id"]
 
-            comment_url = (
-                f"https://api.github.com/repos/{owner}/{repo}"
-                f"/pulls/{pull_number}/reviews/{review_id}/comments"
+            comment_path = (
+                f"repos/{owner}/{repo}/pulls/{pull_number}/"
+                f"reviews/{review_id}/comments"
             )
+            comment_url = build_github_rest_api_url(comment_path)
 
             submitted_at = review.get("submitted_at")
             if submitted_at is None:
