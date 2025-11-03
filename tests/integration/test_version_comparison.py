@@ -3,15 +3,19 @@
 import os
 import re
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+# Constants
+FLOAT_TOLERANCE = 0.01  # Tolerance for floating point comparisons
+
 
 def parse_tabulated_output(output: str) -> dict[str, dict[str, Any]]:
-    """Parse tabulated output into a dictionary of user stats.
+    """
+    Parse tabulated output into a dictionary of user stats.
 
     Args:
         output: The raw output from review-tally command
@@ -19,6 +23,7 @@ def parse_tabulated_output(output: str) -> dict[str, dict[str, Any]]:
     Returns:
         Dictionary mapping username to their stats
         Example: {'user1': {'reviews': 10, 'comments': 25, ...}, ...}
+
     """
     lines = output.strip().split("\n")
     user_stats: dict[str, dict[str, Any]] = {}
@@ -33,11 +38,10 @@ def parse_tabulated_output(output: str) -> dict[str, dict[str, Any]]:
             continue
 
         # Look for separator line (contains dashes/hyphens)
-        if re.match(r"^[\s\-+|]+$", line):
-            if idx > 0:
-                header_line = lines[idx - 1]
-                data_start_idx = idx + 1
-                break
+        if re.match(r"^[\s\-+|]+$", line) and idx > 0:
+            header_line = lines[idx - 1]
+            data_start_idx = idx + 1
+            break
 
     if header_line is None:
         # If no separator found, try to parse first non-empty line as header
@@ -93,9 +97,10 @@ def parse_tabulated_output(output: str) -> dict[str, dict[str, Any]]:
 
 
 def save_output_files(
-    local_output: str, released_output: str, output_dir: Path
+    local_output: str, released_output: str, output_dir: Path,
 ) -> tuple[Path, Path]:
-    """Save outputs to timestamped files.
+    """
+    Save outputs to timestamped files.
 
     Args:
         local_output: Output from local version
@@ -104,9 +109,10 @@ def save_output_files(
 
     Returns:
         Tuple of (local_file_path, released_file_path)
+
     """
     output_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
     local_file = output_dir / f"local_output_{timestamp}.txt"
     released_file = output_dir / f"released_output_{timestamp}.txt"
@@ -121,7 +127,8 @@ def compare_outputs(
     local_stats: dict[str, dict[str, Any]],
     released_stats: dict[str, dict[str, Any]],
 ) -> tuple[bool, str]:
-    """Semantically compare two sets of user statistics.
+    """
+    Semantically compare two sets of user statistics.
 
     Args:
         local_stats: Parsed stats from local version
@@ -129,6 +136,7 @@ def compare_outputs(
 
     Returns:
         Tuple of (are_equal, difference_message)
+
     """
     differences = []
 
@@ -141,12 +149,12 @@ def compare_outputs(
 
     if missing_in_released:
         differences.append(
-            f"Users in local but not in released: {missing_in_released}"
+            f"Users in local but not in released: {missing_in_released}",
         )
 
     if missing_in_local:
         differences.append(
-            f"Users in released but not in local: {missing_in_local}"
+            f"Users in released but not in local: {missing_in_local}",
         )
 
     # Compare stats for common users
@@ -158,7 +166,7 @@ def compare_outputs(
 
         # Check for metric differences
         all_metrics = set(local_user_stats.keys()) | set(
-            released_user_stats.keys()
+            released_user_stats.keys(),
         )
 
         for metric in sorted(all_metrics):
@@ -167,15 +175,16 @@ def compare_outputs(
 
             if local_value != released_value:
                 # For floating point numbers, allow small differences
-                if isinstance(local_value, float) and isinstance(
-                    released_value, float
+                if (
+                    isinstance(local_value, float)
+                    and isinstance(released_value, float)
+                    and abs(local_value - released_value) < FLOAT_TOLERANCE
                 ):
-                    if abs(local_value - released_value) < 0.01:
-                        continue
+                    continue
 
                 differences.append(
                     f"User '{user}', metric '{metric}': "
-                    f"local={local_value}, released={released_value}"
+                    f"local={local_value}, released={released_value}",
                 )
 
     if differences:
@@ -186,7 +195,8 @@ def compare_outputs(
 
 @pytest.mark.integration
 def test_local_vs_released_version() -> None:
-    """Test that local version produces same output as released version.
+    """
+    Test that local version produces same output as released version.
 
     This integration test runs review-tally against the expressjs
     organization for March 2025 using both the local development version
@@ -200,7 +210,7 @@ def test_local_vs_released_version() -> None:
     if "GITHUB_TOKEN" not in os.environ:
         pytest.fail(
             "GITHUB_TOKEN environment variable is required for "
-            "integration tests"
+            "integration tests",
         )
 
     # Test parameters
@@ -239,7 +249,7 @@ def test_local_vs_released_version() -> None:
         pytest.fail(
             f"Local version failed with exit code {e.returncode}:\n"
             f"stdout: {e.stdout}\n"
-            f"stderr: {e.stderr}"
+            f"stderr: {e.stderr}",
         )
     except subprocess.TimeoutExpired:
         pytest.fail(f"Local version timed out after {timeout} seconds")
@@ -270,23 +280,23 @@ def test_local_vs_released_version() -> None:
             "Released version not found. Please install review-tally:\n"
             "  pip install review-tally\n"
             "or:\n"
-            "  poetry add --group dev review-tally"
+            "  poetry add --group dev review-tally",
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(
             f"Released version failed with exit code {e.returncode}:\n"
             f"stdout: {e.stdout}\n"
-            f"stderr: {e.stderr}"
+            f"stderr: {e.stderr}",
         )
     except subprocess.TimeoutExpired:
         pytest.fail(f"Released version timed out after {timeout} seconds")
 
     # Save outputs to files
     local_file, released_file = save_output_files(
-        local_output, released_output, output_dir
+        local_output, released_output, output_dir,
     )
 
-    print(f"\nOutputs saved to:")
+    print("\nOutputs saved to:")
     print(f"  Local: {local_file}")
     print(f"  Released: {released_file}")
 
@@ -303,10 +313,10 @@ def test_local_vs_released_version() -> None:
             f"{diff_message}\n\n"
             f"Full outputs saved to:\n"
             f"  Local: {local_file}\n"
-            f"  Released: {released_file}"
+            f"  Released: {released_file}",
         )
 
     print(
-        f"\nSuccess! Local and released versions produced identical results."
+        "\nSuccess! Local and released versions produced identical results.",
     )
     print(f"Compared {len(local_stats)} users across {org} organization.")
