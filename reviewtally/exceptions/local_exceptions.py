@@ -52,3 +52,14 @@ class PaginationError(Exception):
     def __init__(self, message: str) -> None:
         """Initialize the exception string."""
         super().__init__(f"Pagination error: {message}")
+
+
+class RepositoryTimeoutError(Exception):
+    """Exception raised when repository processing times out."""
+
+    def __init__(self, owner: str, repo: str, timeout: int) -> None:
+        """Initialize the exception string."""
+        super().__init__(
+            f"Repository {owner}/{repo} processing timed out "
+            f"after {timeout} seconds",
+        )
