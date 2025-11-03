@@ -73,3 +73,6 @@ ignore = ["D100", "D101", "D102", "D103", "D203", "D212", ]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"  # or "strict"
 required_plugins = ["pytest-asyncio"]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
