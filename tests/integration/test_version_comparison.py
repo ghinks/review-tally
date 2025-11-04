@@ -233,7 +233,7 @@ def test_local_vs_released_version() -> None:
         start_date,
         "-e",
         end_date,
-        "--nocache",
+        "--no-cache",
     ]
 
     try:
@@ -263,7 +263,7 @@ def test_local_vs_released_version() -> None:
         start_date,
         "-e",
         end_date,
-        "--nocache",
+        "--no-cache",
     ]
 
     try:
