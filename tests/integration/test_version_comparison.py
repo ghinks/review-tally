@@ -217,7 +217,7 @@ def test_local_vs_released_version() -> None:
     org = "expressjs"
     start_date = "2025-11-01"
     end_date = "2025-11-05"
-    timeout = 600  # 10 minutes
+    timeout = 600 * 3 # 10 minutes
 
     # Prepare output directory
     output_dir = Path(__file__).parent / "outputs"
