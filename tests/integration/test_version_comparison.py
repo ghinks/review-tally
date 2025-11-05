@@ -215,8 +215,8 @@ def test_local_vs_released_version() -> None:
 
     # Test parameters
     org = "expressjs"
-    start_date = "2025-03-01"
-    end_date = "2025-03-14"
+    start_date = "2025-11-01"
+    end_date = "2025-11-05"
     timeout = 600  # 10 minutes
 
     # Prepare output directory
@@ -239,6 +239,7 @@ def test_local_vs_released_version() -> None:
     ]
 
     try:
+        print(f"\nRunning local version command: {' '.join(local_cmd)}")
         local_result = subprocess.run(
             local_cmd,
             capture_output=True,
@@ -247,6 +248,7 @@ def test_local_vs_released_version() -> None:
             check=True,
         )
         local_output = local_result.stdout
+        print(f"\nLocal version output:\n{local_output}")
     except subprocess.CalledProcessError as e:
         pytest.fail(
             f"Local version failed with exit code {e.returncode}:\n"
@@ -269,6 +271,7 @@ def test_local_vs_released_version() -> None:
     ]
 
     try:
+        print(f"\nRunning released version command: {' '.join(released_cmd)}")
         released_result = subprocess.run(
             released_cmd,
             capture_output=True,
@@ -277,6 +280,7 @@ def test_local_vs_released_version() -> None:
             check=True,
         )
         released_output = released_result.stdout
+        print(f"\nReleased version output:\n{released_output}")
     except FileNotFoundError:
         pytest.fail(
             "Released version not found. Please install review-tally:\n"
