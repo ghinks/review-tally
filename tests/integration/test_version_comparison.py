@@ -224,6 +224,8 @@ def test_local_vs_released_version() -> None:
 
     # Run local version
     local_cmd = [
+        "poetry",
+        "run",
         "python",
         "-m",
         "reviewtally.main",
