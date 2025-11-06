@@ -28,7 +28,7 @@ jobs:
           poetry run mypy reviewtally --python-version=${{ matrix.python-version }}
       - name: run unit tests
         run: |
-          poetry run pytest
+          poetry run pytest -m "not integration"
       - name: build package
         run: |
           poetry build
