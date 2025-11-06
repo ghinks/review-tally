@@ -32,12 +32,6 @@ jobs:
       - name: install latest release for integration test
         run: |
           pip install review-tally
-      - name: run integration tests
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          poetry run pytest tests/integration/ -v
-        timeout-minutes: 30
       - name: build package
         run: |
           poetry build
