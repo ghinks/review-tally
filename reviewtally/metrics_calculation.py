@@ -44,6 +44,7 @@ def calculate_time_metrics(
     for created_time, review_time in zip(
         pr_created_datetimes,
         review_datetimes,
+        strict=False,
     ):
         if review_time >= created_time:
             response_times.append(

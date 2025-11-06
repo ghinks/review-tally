@@ -85,7 +85,7 @@ def plot_individual_pie_chart(
     threshold = 3  # percent
     custom_text = [
         f"{label}: {value}" if (value / total * 100) > threshold else ""
-        for label, value in zip(labels, values)
+        for label, value in zip(labels, values, strict=False)
     ]
     # Create pie chart
     fig = go.Figure(
