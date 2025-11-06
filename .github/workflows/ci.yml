@@ -29,9 +29,6 @@ jobs:
       - name: run unit tests
         run: |
           poetry run pytest -m "not integration"
-      - name: install latest release for integration test
-        run: |
-          pip install review-tally
       - name: build package
         run: |
           poetry build
