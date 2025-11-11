@@ -95,13 +95,25 @@ def _make_pr_request_with_retry(
 
             # Handle rate limiting (existing logic)
             backoff_if_ratelimited(response.headers)
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                status = getattr(e.response, "status_code", None) or response.status_code
+                # Fail fast on non-retryable HTTP errors (e.g. 404/422)
+                if status not in RETRYABLE_STATUS_CODES:
+                    raise
+                # Retry on retryable HTTP errors if attempts remain
+                if attempt < MAX_RETRIES:
+                    _backoff_delay(attempt)
+                    continue
+                # No attempts left; re-raise
+                raise
 
             return response.json()
 
         except (
-            requests.exceptions.RequestException,
             requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
         ):
             if attempt < MAX_RETRIES:
                 _backoff_delay(attempt)

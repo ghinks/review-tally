@@ -4,6 +4,7 @@ import sys
 import time
 from typing import Any
 
+import requests
 from tqdm import tqdm
 
 from reviewtally.analysis.sprint_periods import calculate_sprint_periods
@@ -20,7 +21,12 @@ from reviewtally.data_collection import (
 from reviewtally.exporters.sprint_export import export_sprint_csv
 from reviewtally.metrics_calculation import calculate_reviewer_metrics
 from reviewtally.output_formatting import generate_results_table
-from reviewtally.queries import set_github_host
+from reviewtally.queries import (
+    GENERAL_TIMEOUT,
+    build_github_rest_api_url,
+    require_github_token,
+    set_github_host,
+)
 from reviewtally.queries.get_repos_gql import get_repos
 from reviewtally.visualization.individual_plot import (
     SUPPORTED_INDIVIDUAL_METRICS,
@@ -61,6 +67,32 @@ def main() -> None:
             f"{time.time() - start_time:.2f} seconds"
         )
         timestamped_print(configured_message)
+        token = require_github_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        for target in repo_targets:
+            url = build_github_rest_api_url(
+                f"repos/{target.owner}/{target.name}",
+            )
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=GENERAL_TIMEOUT,
+            )
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                status = (
+                    getattr(e.response, "status_code", None)
+                    or response.status_code
+                )
+                print(  # noqa: T201
+                    f"Error: repository {target.owner}/{target.name} not found "
+                    f"(HTTP {status})",
+                )
+                sys.exit(1)
     else:
         request_message = (
             "Calling get_repos_by_language "
