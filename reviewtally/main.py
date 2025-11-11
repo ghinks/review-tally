@@ -89,7 +89,8 @@ def main() -> None:
                     or response.status_code
                 )
                 print(  # noqa: T201
-                    f"Error: repository {target.owner}/{target.name} not found "
+                    f"Error: repository {target.owner}/{target.name}"
+                    " not found ",
                     f"(HTTP {status})",
                 )
                 sys.exit(1)
@@ -126,7 +127,8 @@ def _handle_sprint_analysis(
 ) -> None:
     """Handle sprint analysis mode."""
     sprint_periods = calculate_sprint_periods(
-        args["start_date"], args["end_date"],
+        args["start_date"],
+        args["end_date"],
     )
     sprint_stats: dict[str, dict[str, Any]] = {}
 
