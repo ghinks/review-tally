@@ -34,7 +34,6 @@ MAX_BACKOFF = 600.0               # Maximum backoff delay in seconds
 
 # HTTP status codes that should trigger retries
 RETRYABLE_STATUS_CODES = {
-    429,  # Too Many Requests (rate limiting)
     500,  # Internal Server Error
     502,  # Bad Gateway
     503,  # Service Unavailable

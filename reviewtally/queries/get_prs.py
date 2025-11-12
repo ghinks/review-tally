@@ -95,13 +95,28 @@ def _make_pr_request_with_retry(
 
             # Handle rate limiting (existing logic)
             backoff_if_ratelimited(response.headers)
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                status = (
+                    getattr(e.response, "status_code", None)
+                    or response.status_code
+                )
+                # Fail fast on non-retryable HTTP errors (e.g. 404/422)
+                if status not in RETRYABLE_STATUS_CODES:
+                    raise
+                # Retry on retryable HTTP errors if attempts remain
+                if attempt < MAX_RETRIES:
+                    _backoff_delay(attempt)
+                    continue
+                # No attempts left; re-raise
+                raise
 
             return response.json()
 
         except (
-            requests.exceptions.RequestException,
             requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
         ):
             if attempt < MAX_RETRIES:
                 _backoff_delay(attempt)
@@ -240,8 +255,7 @@ def get_pull_requests_between_dates(
             # Fetch forward if needed and end is after cached data
             if needs_forward and end_date > cached_max:
                 print(  # noqa: T201
-                    f"Forward fetch: {cached_max.date()} to "
-                    f"{end_date.date()}",
+                    f"Forward fetch: {cached_max.date()} to {end_date.date()}",
                 )
                 forward_prs, boundary = fetch_pull_requests_from_github(
                     owner,
