@@ -38,6 +38,7 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
         repositories(first: 100) {
           nodes {
             name
+            isArchived
             pullRequests {
               totalCount
             }
@@ -72,6 +73,8 @@ def get_repos_by_language(org: str, languages: list[str]) -> list[str]:
             in [language.lower() for language in languages]
             for node in repo["languages"]["nodes"]
         ):
+            continue
+        if repo.get("isArchived"):
             continue
 
         # Check PR count threshold
