@@ -115,7 +115,7 @@ class TestGetReposByLanguage(unittest.TestCase):
         assert repos == ["active_repo", "another_active_repo"]
         assert "archived_repo" not in repos
 
-        # Test that archived repos are excluded even when matching language filter
+        # Test archived repos excluded with language filter
         repos = get_repos_by_language("test_org", ["Python"])
         assert repos == ["active_repo"]
         assert "archived_repo" not in repos
