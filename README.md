@@ -43,7 +43,7 @@ that are included in the statistics. If no languages are provided then all of
 the repositories will be included in the statistics.
 
 ```shell
-review-tally reviews,comments,avg-comments,\
+review-tally -m reviews,comments,avg-comments,\
 engagement,thoroughness,response-time,\
 completion-time,active-days -o expressjs
 ```
