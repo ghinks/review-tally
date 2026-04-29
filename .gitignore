@@ -167,3 +167,4 @@ cython_debug/
 TODOS.md
 /claude-local.md
 /.mcp.json
+.vscode
