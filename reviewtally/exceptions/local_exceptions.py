@@ -52,3 +52,15 @@ class PaginationError(Exception):
     def __init__(self, message: str) -> None:
         """Initialize the exception string."""
         super().__init__(f"Pagination error: {message}")
+
+
+class SearchLimitReachedError(Exception):
+    """Exception raised when GitHub search limit (1000 items) is reached."""
+
+    def __init__(self, total_count: int) -> None:
+        """Initialize the exception string."""
+        super().__init__(
+            f"GitHub search limit reached: {total_count} results found, "
+            "but only the first 1000 are accessible. "
+            "Please narrow your date range.",
+        )

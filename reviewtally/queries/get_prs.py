@@ -13,7 +13,10 @@ if TYPE_CHECKING:
     from reviewtally.cache.cache_manager import CacheManager
 
 from reviewtally.cache.cache_manager import get_cache_manager
-from reviewtally.exceptions.local_exceptions import PaginationError
+from reviewtally.exceptions.local_exceptions import (
+    PaginationError,
+    SearchLimitReachedError,
+)
 from reviewtally.queries import (
     BACKOFF_MULTIPLIER,
     GENERAL_TIMEOUT,
@@ -27,6 +30,7 @@ from reviewtally.queries import (
 
 MAX_NUM_PAGES = 100
 ITEMS_PER_PAGE = 100
+GITHUB_SEARCH_LIMIT = 1000
 RATE_LIMIT_REMAINING_THRESHOLD = 10  # arbitrary threshold
 RATE_LIMIT_SLEEP_SECONDS = 60  # seconds to sleep if rate limit is hit
 
@@ -167,6 +171,12 @@ def fetch_pull_requests_from_github(
         response_data = _make_pr_request_with_retry(url, headers, params)
         # Search API returns {"items": [...]} instead of direct array
         if isinstance(response_data, dict):
+            # Detect 1000 item limit on the first page
+            if page == 1:
+                total_count = response_data.get("total_count", 0)
+                if total_count > GITHUB_SEARCH_LIMIT:
+                    raise SearchLimitReachedError(total_count)
+
             prs = response_data.get("items", [])
         else:
             prs = []  # Unexpected format, skip this page
