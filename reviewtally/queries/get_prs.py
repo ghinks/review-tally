@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import requests
@@ -139,6 +139,40 @@ def fetch_pull_requests_from_github(
     start_date: datetime,
     end_date: datetime,
 ) -> tuple[list[dict], bool]:
+    """Fetch PRs from GitHub, falling back to weekly chunks if limit hit."""
+    try:
+        return _fetch_pr_date_range(owner, repo, start_date, end_date)
+    except SearchLimitReachedError:
+        print(  # noqa: T201
+            f"Search limit reached for {owner}/{repo}. "
+            "Falling back to weekly chunks...",
+        )
+        pull_requests = []
+        reached_boundary = True
+
+        current_start = start_date
+        while current_start < end_date:
+            current_end = min(current_start + timedelta(days=7), end_date)
+            prs, boundary = _fetch_pr_date_range(
+                owner,
+                repo,
+                current_start,
+                current_end,
+            )
+            pull_requests.extend(prs)
+            reached_boundary = reached_boundary or boundary
+            current_start = current_end
+
+        return pull_requests, reached_boundary
+
+
+def _fetch_pr_date_range(
+    owner: str,
+    repo: str,
+    start_date: datetime,
+    end_date: datetime,
+) -> tuple[list[dict], bool]:
+    """Fetch PRs for a specific date range."""
     # Use GitHub Search Issues API for native date filtering
     url = build_github_rest_api_url("search/issues")
     github_token = require_github_token()

@@ -141,6 +141,61 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
 
     @patch("requests.get")
     @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
+    def test_search_limit_reached_fallback(self, mock_get) -> None:  # noqa: ANN001
+        # First call: SearchLimitReachedError
+        mock_resp_limit = Mock()
+        mock_resp_limit.status_code = 200
+        mock_resp_limit.headers = {}
+        mock_resp_limit.json.return_value = {
+            "total_count": 1200,
+            "items": [],
+        }
+
+        # Subsequent calls: Weekly chunks
+        mock_resp_ok = Mock()
+        mock_resp_ok.status_code = 200
+        mock_resp_ok.headers = {}
+        mock_resp_ok.json.return_value = {
+            "total_count": 50,
+            "items": [{"number": 1}],
+        }
+
+        # Each chunk fetch will have two calls: one for results,
+        # one empty to break the loop
+        mock_resp_empty = Mock()
+        mock_resp_empty.status_code = 200
+        mock_resp_empty.headers = {}
+        mock_resp_empty.json.return_value = {"items": []}
+
+        # 14 days = 2 weekly chunks
+        mock_get.side_effect = [
+            mock_resp_limit,  # Initial full fetch fails
+            mock_resp_ok,
+            mock_resp_empty,  # First week
+            mock_resp_ok,
+            mock_resp_empty,  # Second week
+        ]
+
+        owner = "test_owner"
+        repo = "test_repo"
+        start_date = datetime(2023, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2023, 1, 15, tzinfo=timezone.utc)
+
+        pull_requests = get_pull_requests_between_dates(
+            owner,
+            repo,
+            start_date,
+            end_date,
+            use_cache=False,
+        )
+
+        self.assertEqual(len(pull_requests), 2)
+        # Check that we called the API for the full range and then the chunks
+        # 5 calls total (1 limit + 2*2 for chunks)
+        self.assertEqual(mock_get.call_count, 5)
+
+    @patch("requests.get")
+    @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
     def test_fetch_uses_configured_host(self, mock_get) -> None:  # noqa: ANN001
         set_github_host("https://ghe.example.com/api/v3")
         self.addCleanup(set_github_host, None)
