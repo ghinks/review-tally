@@ -11,13 +11,25 @@ simple objects that have no dependency on aiohttp internals.
 from __future__ import annotations
 
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Protocol, Self
 from unittest.mock import patch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 _HTTP_ERROR_THRESHOLD = 400
+
+
+class _PatcherProtocol(Protocol):
+    """Minimal interface for unittest.mock patch objects."""
+
+    def start(self) -> object:
+        """Activate the patch."""
+        ...
+
+    def stop(self) -> None:
+        """Deactivate the patch."""
+        ...
 
 
 class _MockResponse:
@@ -61,7 +73,7 @@ class MockHTTP:
     def __init__(self) -> None:
         """Initialise with an empty response registry."""
         self._responses: dict[str, list[tuple[int, object]]] = {}
-        self._patcher: object = None
+        self._patcher: _PatcherProtocol | None = None
 
     def get(
         self,
@@ -88,13 +100,13 @@ class MockHTTP:
             "aiohttp.ClientSession.get",
             side_effect=self._get_side_effect,
         )
-        self._patcher.start()  # type: ignore[union-attr]
+        self._patcher.start()
         return self
 
     def __exit__(self, *_: object) -> None:
         """Stop intercepting HTTP GET requests."""
         if self._patcher is not None:
-            self._patcher.stop()  # type: ignore[union-attr]
+            self._patcher.stop()
 
 
 def mock_http() -> Callable[[Callable[..., Any]], Callable[..., Any]]:
