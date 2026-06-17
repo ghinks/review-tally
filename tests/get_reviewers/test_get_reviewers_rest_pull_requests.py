@@ -1,11 +1,10 @@
 import unittest
 
-from aioresponses import aioresponses
-
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_for_pull_requests,
 )
 from tests.constants import TEST_GITHUB_TOKEN
+from tests.mock_http import MockHTTP, mock_http
 from tests.utils import get_reviews_url, read_reviews_file
 
 
@@ -14,8 +13,8 @@ class TestGetReviewers(unittest.TestCase):
     REPO = "express"
     PULL_REQUESTS: tuple[int, ...] = (1, 2)
 
-    @aioresponses()
-    def test_get_reviewers(self, mocked: aioresponses) -> None:
+    @mock_http()
+    def test_get_reviewers(self, mocked: MockHTTP) -> None:
         payload = read_reviews_file()
         urls = []
         for pull_number in self.PULL_REQUESTS:
