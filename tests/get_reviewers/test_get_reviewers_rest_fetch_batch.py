@@ -1,16 +1,15 @@
 import asyncio
 import unittest
 
-from aioresponses import aioresponses
-
 from reviewtally.queries.get_reviewers_rest import fetch_batch
 from tests.constants import TEST_GITHUB_TOKEN
+from tests.mock_http import MockHTTP, mock_http
 from tests.utils import get_reviews_url, read_reviews_file
 
 
 class TestFetchBatch(unittest.TestCase):
-    @aioresponses()
-    def test_fetch_json(self, mocked: aioresponses) -> None:
+    @mock_http()
+    def test_fetch_json(self, mocked: MockHTTP) -> None:
         payload = read_reviews_file()
         urls = []
         for pull_number in range(2):

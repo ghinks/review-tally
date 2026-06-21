@@ -2,16 +2,16 @@ import asyncio
 import unittest
 
 import aiohttp
-from aioresponses import aioresponses
 
 from reviewtally.queries.get_reviewers_rest import fetch
 from tests.constants import TEST_GITHUB_TOKEN
+from tests.mock_http import MockHTTP, mock_http
 from tests.utils import get_reviews_url, read_reviews_file
 
 
 class TestFetch(unittest.TestCase):
-    @aioresponses()
-    def test_fetch_json(self, mocked: aioresponses) -> None:
+    @mock_http()
+    def test_fetch_json(self, mocked: MockHTTP) -> None:
         url = get_reviews_url("expressjs", "express", 1)
         payload = read_reviews_file()
         mocked.get(url, status=200, payload=payload)

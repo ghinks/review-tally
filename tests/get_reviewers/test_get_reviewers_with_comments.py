@@ -1,11 +1,10 @@
 import unittest
 
-from aioresponses import aioresponses
-
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
 )
 from tests.constants import TEST_GITHUB_TOKEN
+from tests.mock_http import MockHTTP, mock_http
 from tests.utils import (
     get_review_comments_url,
     get_reviews_url,
@@ -31,10 +30,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
     EXPECTED_SINGLE_RESULT = 1
     EXPECTED_TWO_RESULTS = 2
 
-    @aioresponses()
+    @mock_http()
     def test_get_reviewers_with_comments_success(
         self,
-        mocked: aioresponses,
+        mocked: MockHTTP,
     ) -> None:
         """Test successful retrieval of reviewers with comments."""
         pull_numbers = [self.PULL_REQUEST_1]
@@ -73,10 +72,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
         # 2 comments in fixture
         assert results[0]["comment_count"] == self.EXPECTED_COMMENT_COUNT
 
-    @aioresponses()
+    @mock_http()
     def test_get_reviewers_with_comments_no_reviews(
         self,
-        mocked: aioresponses,
+        mocked: MockHTTP,
     ) -> None:
         """Test handling of pull requests with no reviews."""
         pull_numbers = [self.PULL_REQUEST_1]
@@ -100,10 +99,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
         # Should return empty list when no reviews
         assert len(results) == self.EXPECTED_NO_COMMENTS
 
-    @aioresponses()
+    @mock_http()
     def test_get_reviewers_with_comments_no_comments(
         self,
-        mocked: aioresponses,
+        mocked: MockHTTP,
     ) -> None:
         """Test reviews that exist but have no comments."""
         pull_numbers = [self.PULL_REQUEST_1]
@@ -139,10 +138,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
         assert results[0]["comment_count"] == self.EXPECTED_NO_COMMENTS
         assert results[0]["user"]["login"] == "octocat"
 
-    @aioresponses()
+    @mock_http()
     def test_get_reviewers_with_comments_multiple_prs(
         self,
-        mocked: aioresponses,
+        mocked: MockHTTP,
     ) -> None:
         """Test multiple pull requests."""
         pull_numbers = [self.PULL_REQUEST_1, self.PULL_REQUEST_2]
@@ -196,10 +195,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
         assert self.PULL_REQUEST_1 in pr_numbers
         assert self.PULL_REQUEST_2 in pr_numbers
 
-    @aioresponses()
+    @mock_http()
     def test_get_reviewers_with_comments_multiple_reviewers(
         self,
-        mocked: aioresponses,
+        mocked: MockHTTP,
     ) -> None:
         """Test pull request with multiple reviews from different users."""
         pull_numbers = [self.PULL_REQUEST_1]
@@ -257,10 +256,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
         assert defunkt_result["comment_count"] == self.EXPECTED_NO_COMMENTS
         assert defunkt_result["review_id"] == self.REVIEW_ID_81
 
-    @aioresponses()
+    @mock_http()
     def test_get_reviewers_with_comments_mixed_scenarios(
         self,
-        mocked: aioresponses,
+        mocked: MockHTTP,
     ) -> None:
         """Test mixed scenario: some PRs with reviews, some without."""
         pull_numbers = [self.PULL_REQUEST_1, self.PULL_REQUEST_2]
@@ -305,10 +304,10 @@ class TestGetReviewersWithComments(unittest.TestCase):
         assert results[0]["pull_number"] == self.PULL_REQUEST_1
         assert results[0]["comment_count"] == self.EXPECTED_COMMENT_COUNT
 
-    @aioresponses()
+    @mock_http()
     def test_get_reviewers_with_comments_missing_submitted_at(
         self,
-        mocked: aioresponses,
+        mocked: MockHTTP,
     ) -> None:
         """Test handling of reviews with missing submitted_at field."""
         pull_numbers = [self.PULL_REQUEST_1]
