@@ -219,7 +219,7 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
         mock_exit.assert_not_called()
         self.assertIsInstance(result, dict)
         # Check result includes the expected CommandLineArgs keys
-        self.assertEqual(len(result), 21)
+        self.assertEqual(len(result), 22)
 
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
@@ -232,6 +232,7 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
             datetime(2023, 1, 15, tzinfo=timezone.utc),
         )
         # Defaults for new args
+        self.assertFalse(result["exclude_rubber_stamps"])
         self.assertFalse(result["plot_sprint"])
         self.assertEqual(result["chart_type"], "bar")
         self.assertEqual(

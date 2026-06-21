@@ -25,6 +25,12 @@ def read_multiple_reviews_file() -> list[dict]:
         return json.load(file)
 
 
+def read_rubber_stamp_reviews_file() -> list[dict]:
+    path = Path("tests/fixtures/rubber_stamp_reviews_response.json")
+    with path.open("r") as file:
+        return json.load(file)
+
+
 def read_empty_reviews_file() -> list[dict]:
     with Path("tests/fixtures/empty_reviews_response.json").open("r") as file:
         return json.load(file)

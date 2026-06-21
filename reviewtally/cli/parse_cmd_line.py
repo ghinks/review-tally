@@ -43,6 +43,7 @@ class CommandLineArgs(TypedDict):
     clear_expired_cache: bool
     show_cache_stats: bool
     repositories: list[str]
+    exclude_rubber_stamps: bool
 
 
 DATE_FORMAT = "%Y-%m-%d"
@@ -247,13 +248,21 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     )
     metrics_help = (
         "Comma-separated list of metrics to display "
-        "(reviews,comments,avg-comments,engagement,thoroughness,"
+        "(reviews,comments,avg-comments,rubber-stamps,engagement,thoroughness,"
         "response-time,completion-time,active-days)"
     )
     parser.add_argument(
         "-m",
         "--metrics",
         help=metrics_help,
+    )
+    parser.add_argument(
+        "--exclude-rubber-stamps",
+        action="store_true",
+        help=(
+            "Exclude rubber-stamp reviews (approvals with no body and no "
+            "inline comments) from the review and comment tallies"
+        ),
     )
     version_help = """
     Print version and exit
@@ -505,6 +514,13 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         "cache-stats",
     )
 
+    exclude_rubber_stamps = bool(
+        args.exclude_rubber_stamps,
+    ) or _get_config_bool(
+        config,
+        "exclude-rubber-stamps",
+    )
+
     repositories = _parse_repositories(config.get("repositories"))
 
     github_host_input = args.github_host
@@ -572,4 +588,5 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         clear_expired_cache=clear_expired_cache,
         show_cache_stats=show_cache_stats,
         repositories=repositories,
+        exclude_rubber_stamps=exclude_rubber_stamps,
     )
