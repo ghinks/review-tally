@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import random
 import time
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import requests
+
+from reviewtally.queries.get_reviewers_rest import fetch_batch
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -250,7 +253,7 @@ def get_pull_requests_between_dates(
             start_date,
             end_date,
         )
-        return prs
+        return _fetch_pr_details(owner, repo, prs)
 
     # Get cached PRs and cache stats from pr_metadata table
     cached_prs, pr_stats = cache_manager.get_cached_prs_for_date_range(
@@ -321,6 +324,11 @@ def get_pull_requests_between_dates(
                 end_date,
             )
 
+        if newly_fetched_prs:
+            newly_fetched_prs = _fetch_pr_details(
+                owner, repo, newly_fetched_prs,
+            )
+
         # Cache individual PRs
         if newly_fetched_prs:
             _cache_pr_metadata(
@@ -332,6 +340,58 @@ def get_pull_requests_between_dates(
 
     # Combine cached and newly fetched PRs
     return _combine_pr_results(cached_prs, newly_fetched_prs)
+
+
+def _fetch_pr_details(owner: str, repo: str, prs: list[dict]) -> list[dict]:
+    """
+    Fetch PR details like additions, deletions, changed_files.
+    
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        prs: List of PR dictionaries
+        
+    Returns:
+        Updated list with size fields added.
+    """
+    prs_to_fetch = [pr for pr in prs if "additions" not in pr]
+    if not prs_to_fetch:
+        return prs
+
+    urls = [
+        build_github_rest_api_url(f"repos/{owner}/{repo}/pulls/{pr['number']}")
+        for pr in prs_to_fetch
+    ]
+
+    github_token = require_github_token()
+
+    # Process in chunks to avoid blowing up memory/rate limits
+    # The existing fetch_batch handles limits, but we can just pass them all
+    details_responses = asyncio.run(
+        fetch_batch(urls, github_token=github_token),
+    )
+
+    # Merge back into prs
+    details_map = {
+        resp["number"]: response_to_pr_fields(resp)
+        for resp in details_responses
+        if "number" in resp
+    }
+
+    for pr in prs:
+        if pr["number"] in details_map:
+            pr.update(details_map[pr["number"]])
+
+    return prs
+
+
+def response_to_pr_fields(resp: dict) -> dict:
+    """Extract size-related fields from a GitHub PR API response."""
+    return {
+        "additions": resp.get("additions", 0),
+        "deletions": resp.get("deletions", 0),
+        "changed_files": resp.get("changed_files", 0),
+    }
 
 
 def _cache_pr_metadata(

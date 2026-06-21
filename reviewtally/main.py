@@ -140,6 +140,8 @@ def _handle_sprint_analysis(
         sprint_stats=sprint_stats,
         sprint_periods=sprint_periods,
         use_cache=args["use_cache"],
+        ignore_rubber_stamps=args["ignore_rubber_stamps"],
+        rubber_stamp_min_lines=args["rubber_stamp_min_lines"],
     )
     process_repositories(process_context)
 
@@ -176,6 +178,8 @@ def _handle_individual_analysis(
         end_date=args["end_date"],
         start_time=start_time,
         use_cache=args["use_cache"],
+        ignore_rubber_stamps=args["ignore_rubber_stamps"],
+        rubber_stamp_min_lines=args["rubber_stamp_min_lines"],
     )
     reviewer_stats = process_repositories(process_context)
     calculate_reviewer_metrics(reviewer_stats)

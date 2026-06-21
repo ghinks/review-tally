@@ -1,9 +1,9 @@
 import os
 import ssl
 from typing import Optional, Tuple
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import aiohttp
-from urllib.parse import urljoin, urlparse, urlunparse
 
 from reviewtally.exceptions.local_exceptions import GitHubTokenNotDefinedError
 

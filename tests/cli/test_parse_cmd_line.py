@@ -219,7 +219,7 @@ class TestParseCmdLineMalformedDates(ParseCmdLineTestCase):
         mock_exit.assert_not_called()
         self.assertIsInstance(result, dict)
         # Check result includes the expected CommandLineArgs keys
-        self.assertEqual(len(result), 21)
+        self.assertEqual(len(result), 23)
 
         # Verify the parsed dates
         self.assertEqual(result["org_name"], "test-org")
@@ -625,5 +625,7 @@ class TestParseCmdLineConfiguration(ParseCmdLineTestCase):
             "Invalid repository entry",
             str(mock_print.call_args[0][0]),
         )
+
+
 if __name__ == "__main__":
     unittest.main()

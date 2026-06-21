@@ -441,7 +441,6 @@ class SQLiteCache:
 
         return None
 
-
     def cleanup_expired(self) -> int:
         """
         Remove expired cache entries.

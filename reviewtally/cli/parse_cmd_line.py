@@ -43,6 +43,8 @@ class CommandLineArgs(TypedDict):
     clear_expired_cache: bool
     show_cache_stats: bool
     repositories: list[str]
+    ignore_rubber_stamps: bool
+    rubber_stamp_min_lines: int
 
 
 DATE_FORMAT = "%Y-%m-%d"
@@ -248,7 +250,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     metrics_help = (
         "Comma-separated list of metrics to display "
         "(reviews,comments,avg-comments,engagement,thoroughness,"
-        "response-time,completion-time,active-days)"
+        "response-time,completion-time,active-days,rubber-stamps,meaningful-approvals)"
     )
     parser.add_argument(
         "-m",
@@ -338,6 +340,21 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         "--cache-stats",
         action="store_true",
         help="Show cache statistics and exit",
+    )
+
+    parser.add_argument(
+        "--ignore-rubber-stamps",
+        action="store_true",
+        help="Ignore reviews that are rubber stamps",
+    )
+    parser.add_argument(
+        "--rubber-stamp-min-lines",
+        type=int,
+        default=10,
+        help=(
+            "Minimum lines changed for an approval without comments "
+            "to be considered a rubber stamp (default: 10)"
+        ),
     )
 
     args = parser.parse_args()
@@ -442,8 +459,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
     ):
         allowed_metrics = ", ".join(sorted(ALLOWED_INDIVIDUAL_METRICS))
         _config_error(
-            "individual-chart-metric must be one of: "
-            f"{allowed_metrics}",
+            f"individual-chart-metric must be one of: {allowed_metrics}",
         )
     individual_chart_metric = (
         individual_chart_metric_input or DEFAULT_INDIVIDUAL_CHART_METRIC
@@ -544,8 +560,7 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
 
     if org_name is None and not repositories:
         error_msg = (
-            "Error: Provide an organization (--org) "
-            "or configure repositories."
+            "Error: Provide an organization (--org) or configure repositories."
         )
         print(error_msg)  # noqa: T201
         sys.exit(1)
@@ -572,4 +587,6 @@ def parse_cmd_line() -> CommandLineArgs:  # noqa: C901, PLR0912, PLR0915
         clear_expired_cache=clear_expired_cache,
         show_cache_stats=show_cache_stats,
         repositories=repositories,
+        ignore_rubber_stamps=args.ignore_rubber_stamps,
+        rubber_stamp_min_lines=args.rubber_stamp_min_lines,
     )

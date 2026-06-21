@@ -17,6 +17,7 @@ from reviewtally.queries.get_reviewers_rest import (
 
 DEBUG_FLAG = False
 BATCH_SIZE = 5
+RUBBER_STAMP_PHRASES = {"lgtm", "looks good", "lgtm!"}
 
 
 def timestamped_print(message: str) -> None:
@@ -38,6 +39,8 @@ class ReviewDataContext:
     sprint_stats: dict[str, dict[str, Any]] | None = None
     sprint_periods: list[tuple[datetime, datetime, str]] | None = None
     use_cache: bool = True
+    ignore_rubber_stamps: bool = False
+    rubber_stamp_min_lines: int = 10
 
 
 @dataclass(frozen=True)
@@ -59,6 +62,8 @@ class ProcessRepositoriesContext:
     sprint_stats: dict[str, dict[str, Any]] | None = None
     sprint_periods: list[tuple[datetime, datetime, str]] | None = None
     use_cache: bool = True
+    ignore_rubber_stamps: bool = False
+    rubber_stamp_min_lines: int = 10
 
 
 @dataclass
@@ -74,7 +79,7 @@ class SprintPlottingContext:
     save_plot: str | None
 
 
-def collect_review_data(context: ReviewDataContext) -> None:
+def collect_review_data(context: ReviewDataContext) -> None:  # noqa: C901, PLR0912
     # Create PR lookup for temporal data
     pr_lookup = {pr["number"]: pr for pr in context.pull_requests}
 
@@ -99,16 +104,40 @@ def collect_review_data(context: ReviewDataContext) -> None:
             comment_count = review["comment_count"]
             pr_number = review["pull_number"]
             review_submitted_at = review.get("submitted_at")
+            state = review.get("state")
+            body = review.get("body") or ""
+
+            pr_data = pr_lookup.get(pr_number, {})
+            pr_size = pr_data.get("additions", 0) + pr_data.get("deletions", 0)
+
+            is_rubber_stamp = False
+            if state == "APPROVED" and comment_count == 0:
+                body_lower = body.lower().strip()
+                if (
+                    not body_lower
+                    or body_lower in RUBBER_STAMP_PHRASES
+                ) and pr_size > context.rubber_stamp_min_lines:
+                    is_rubber_stamp = True
 
             if login not in context.reviewer_stats:
                 context.reviewer_stats[login] = {
                     "reviews": 0,
                     "comments": 0,
+                    "rubber_stamps": 0,
+                    "meaningful_approvals": 0,
                     "engagement_level": "Low",
                     "thoroughness_score": 0,
                     "review_times": [],
                     "pr_created_times": [],
                 }
+
+            if is_rubber_stamp:
+                context.reviewer_stats[login]["rubber_stamps"] += 1
+            elif state == "APPROVED":
+                context.reviewer_stats[login]["meaningful_approvals"] += 1
+
+            if context.ignore_rubber_stamps and is_rubber_stamp:
+                continue
 
             context.reviewer_stats[login]["reviews"] += 1
             context.reviewer_stats[login]["comments"] += comment_count
@@ -209,6 +238,8 @@ def process_repositories(
             sprint_stats=context.sprint_stats,
             sprint_periods=context.sprint_periods,
             use_cache=context.use_cache,
+            ignore_rubber_stamps=context.ignore_rubber_stamps,
+            rubber_stamp_min_lines=context.rubber_stamp_min_lines,
         )
         collect_review_data(review_context)
         timestamped_print(

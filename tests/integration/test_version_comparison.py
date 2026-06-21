@@ -97,7 +97,9 @@ def parse_tabulated_output(output: str) -> dict[str, dict[str, Any]]:
 
 
 def save_output_files(
-    local_output: str, released_output: str, output_dir: Path,
+    local_output: str,
+    released_output: str,
+    output_dir: Path,
 ) -> tuple[Path, Path]:
     """
     Save outputs to timestamped files.
@@ -217,7 +219,7 @@ def test_local_vs_released_version() -> None:
     org = "expressjs"
     start_date = "2025-11-01"
     end_date = "2025-11-05"
-    timeout = 600 * 3 # 10 minutes
+    timeout = 600 * 3  # 10 minutes
 
     # Prepare output directory
     output_dir = Path(__file__).parent / "outputs"
@@ -299,7 +301,9 @@ def test_local_vs_released_version() -> None:
 
     # Save outputs to files
     local_file, released_file = save_output_files(
-        local_output, released_output, output_dir,
+        local_output,
+        released_output,
+        output_dir,
     )
 
     print("\nOutputs saved to:")

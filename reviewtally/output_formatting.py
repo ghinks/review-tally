@@ -65,6 +65,14 @@ METRIC_INFO = {
         "header": "Active Days",
         "getter": lambda stats: stats.get("active_review_days", 0),
     },
+    "rubber-stamps": {
+        "header": "Rubber Stamps",
+        "getter": lambda stats: stats.get("rubber_stamps", 0),
+    },
+    "meaningful-approvals": {
+        "header": "Meaningful Approvals",
+        "getter": lambda stats: stats.get("meaningful_approvals", 0),
+    },
 }
 
 

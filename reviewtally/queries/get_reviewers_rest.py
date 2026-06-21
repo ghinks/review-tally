@@ -171,10 +171,7 @@ async def fetch_batch(
         timeout=AIOHTTP_TIMEOUT,
         connector=connector,
     ) as session:
-        tasks = [
-            fetch(session, url, github_token=token)
-            for url in urls
-        ]
+        tasks = [fetch(session, url, github_token=token) for url in urls]
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
 
@@ -266,6 +263,8 @@ def _fetch_review_metadata(
                     "pull_number": pull_number,
                     "submitted_at": submitted_at,
                     "comment_url": comment_url,
+                    "state": review.get("state"),
+                    "body": review.get("body"),
                 },
             )
 
@@ -306,6 +305,8 @@ def _process_and_cache_reviews(
             "pull_number": pull_number,
             "comment_count": comment_count,
             "submitted_at": review_info["submitted_at"],
+            "state": review_info.get("state"),
+            "body": review_info.get("body"),
         }
 
         if pull_number not in pr_review_data:
