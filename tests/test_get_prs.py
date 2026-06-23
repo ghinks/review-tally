@@ -3,6 +3,8 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
+import requests
+
 from reviewtally.exceptions.local_exceptions import (
     PaginationError,
     SearchLimitReachedError,
@@ -214,6 +216,102 @@ class TestGetPullRequestsBetweenDates(unittest.TestCase):
         expected_url = build_github_rest_api_url("search/issues")
         called_url = mock_get.call_args.args[0]
         self.assertEqual(called_url, expected_url)
+
+    @patch("requests.get")
+    @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
+    @patch("builtins.print")
+    def test_422_response_prints_message(
+        self,
+        mock_print: Mock,
+        mock_get: Mock,
+    ) -> None:
+        mock_response = Mock()
+        mock_response.status_code = 422
+        mock_response.headers = {}
+        mock_response.json.return_value = {"message": "Validation Failed"}
+        mock_response.raise_for_status.side_effect = (
+            requests.exceptions.HTTPError(response=mock_response)
+        )
+        mock_get.return_value = mock_response
+
+        owner = "test_owner"
+        repo = "test_repo"
+        start_date = datetime(2023, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2023, 1, 2, tzinfo=timezone.utc)
+
+        with self.assertRaises(requests.exceptions.HTTPError):
+            get_pull_requests_between_dates(
+                owner,
+                repo,
+                start_date,
+                end_date,
+            )
+
+        mock_print.assert_called_once_with("Validation Failed")
+
+    @patch("requests.get")
+    @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
+    @patch("builtins.print")
+    def test_404_response_no_message(
+        self,
+        mock_print: Mock,
+        mock_get: Mock,
+    ) -> None:
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_response.headers = {}
+        mock_response.json.return_value = {}
+        mock_response.raise_for_status.side_effect = (
+            requests.exceptions.HTTPError(response=mock_response)
+        )
+        mock_get.return_value = mock_response
+
+        owner = "test_owner"
+        repo = "test_repo"
+        start_date = datetime(2023, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2023, 1, 2, tzinfo=timezone.utc)
+
+        with self.assertRaises(requests.exceptions.HTTPError):
+            get_pull_requests_between_dates(
+                owner,
+                repo,
+                start_date,
+                end_date,
+            )
+
+        mock_print.assert_not_called()
+
+    @patch("requests.get")
+    @patch.dict(os.environ, {"GITHUB_TOKEN": "test-token"})
+    @patch("builtins.print")
+    def test_400_response_invalid_json(
+        self,
+        mock_print: Mock,
+        mock_get: Mock,
+    ) -> None:
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.headers = {}
+        mock_response.json.side_effect = ValueError("Invalid JSON")
+        mock_response.raise_for_status.side_effect = (
+            requests.exceptions.HTTPError(response=mock_response)
+        )
+        mock_get.return_value = mock_response
+
+        owner = "test_owner"
+        repo = "test_repo"
+        start_date = datetime(2023, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2023, 1, 2, tzinfo=timezone.utc)
+
+        with self.assertRaises(requests.exceptions.HTTPError):
+            get_pull_requests_between_dates(
+                owner,
+                repo,
+                start_date,
+                end_date,
+            )
+
+        mock_print.assert_not_called()
 
 
 if __name__ == "__main__":
