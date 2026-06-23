@@ -266,10 +266,30 @@ def _fetch_review_metadata(
                     "pull_number": pull_number,
                     "submitted_at": submitted_at,
                     "comment_url": comment_url,
+                    "state": review.get("state"),
+                    "body": review.get("body"),
                 },
             )
 
     return review_data
+
+
+def is_rubber_stamp_review(
+    state: str | None,
+    body: str | None,
+    comment_count: int,
+) -> bool:
+    """
+    Return True for an approval with no written or inline feedback.
+
+    A "rubber stamp" is an APPROVED review that carries no review body and
+    no inline comments. Non-approval states (COMMENTED, CHANGES_REQUESTED,
+    DISMISSED, PENDING) are never considered rubber stamps.
+    """
+    if state != "APPROVED":
+        return False
+    has_body = bool(body and body.strip())
+    return not has_body and comment_count == 0
 
 
 def _process_and_cache_reviews(
@@ -300,12 +320,19 @@ def _process_and_cache_reviews(
         comment_count = len(comments) if comments else 0
         pull_number = review_info["pull_number"]
 
+        state = review_info.get("state")
         review_entry = {
             "user": review_info["user"],
             "review_id": review_info["review_id"],
             "pull_number": pull_number,
             "comment_count": comment_count,
             "submitted_at": review_info["submitted_at"],
+            "state": state,
+            "is_rubber_stamp": is_rubber_stamp_review(
+                state,
+                review_info.get("body"),
+                comment_count,
+            ),
         }
 
         if pull_number not in pr_review_data:

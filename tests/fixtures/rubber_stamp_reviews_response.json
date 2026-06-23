@@ -1,0 +1,19 @@
+[
+  {
+    "id": 90,
+    "node_id": "MDE3OlB1bGxSZXF1ZXN0UmV2aWV3OTA=",
+    "user": {
+      "login": "stamper",
+      "id": 9,
+      "type": "User",
+      "site_admin": false
+    },
+    "body": "",
+    "state": "APPROVED",
+    "html_url": "https://github.com/octocat/Hello-World/pull/12#pullrequestreview-90",
+    "pull_request_url": "https://api.github.com/repos/octocat/Hello-World/pulls/12",
+    "submitted_at": "2019-11-17T17:43:43Z",
+    "commit_id": "ecdd80bb57125d7ba9641ffaa4d7d2c19d3f3091",
+    "author_association": "COLLABORATOR"
+  }
+]

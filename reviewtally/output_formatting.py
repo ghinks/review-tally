@@ -41,6 +41,10 @@ METRIC_INFO = {
         "header": "Avg Comments",
         "getter": get_avg_comments,
     },
+    "rubber-stamps": {
+        "header": "Rubber Stamps",
+        "getter": lambda stats: stats.get("rubber_stamps", 0),
+    },
     "engagement": {
         "header": "Engagement",
         "getter": lambda stats: stats["engagement_level"],

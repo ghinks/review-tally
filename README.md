@@ -93,6 +93,22 @@ Customizing metrics displayed:
 review-tally -o expressjs --languages javascript -m reviews,engagement,thoroughness
 ```
 
+## Rubber-Stamp Reviews
+A "rubber stamp" is an approval that carries no real feedback: an `APPROVED`
+review with no review body **and** no inline comments. Reviews in other states
+(`COMMENTED`, `CHANGES_REQUESTED`, etc.) are never counted as rubber stamps.
+
+Add the `rubber-stamps` metric to surface the count per reviewer:
+```bash
+review-tally -o expressjs --languages javascript -m reviews,comments,rubber-stamps
+```
+
+Use `--exclude-rubber-stamps` to drop those approvals from the review and
+comment tallies entirely, so the numbers reflect only substantive reviews:
+```bash
+review-tally -o expressjs --languages javascript --exclude-rubber-stamps
+```
+
 ## Sprint Analysis
 If aggregate data is required sprint over sprint then the `--sprint-analysis`
 option can be used. This will produce a CSV file with the data for each sprint.
@@ -172,7 +188,7 @@ review-tally -o expressjs --languages javascript --plot-individual --save-plot r
 * -l, --languages  A comma separated list of languages that you want to include
 * -s, --start-date The start date for the time frame that you want to query (optional)
 * -e, --end-date The end date for the time frame that you want to query (optional)
-* -m, --metrics Comma-separated list of metrics to display (reviews,comments,avg-comments,engagement,thoroughness). Default: reviews,comments,avg-comments
+* -m, --metrics Comma-separated list of metrics to display (reviews,comments,avg-comments,rubber-stamps,engagement,thoroughness). Default: reviews,comments,avg-comments
 * --github-host Base host used for GitHub API requests. Defaults to api.github.com
 * --github-rest-path Optional base path appended to REST API requests. Defaults to none or the path embedded in `--github-host`
 * --github-graphql-path Optional path to the GraphQL endpoint. Defaults to `/graphql` or mirrors the REST path
@@ -186,6 +202,7 @@ review-tally -o expressjs --languages javascript --plot-individual --save-plot r
 * --save-plot Optional path to save the interactive HTML chart
 * --plot-individual Generate pie charts showing individual reviewer metric distribution (opens in browser)
 * --individual-chart-metric Metric to visualize in individual pie chart. Default: reviews. Available: reviews,comments,engagement_level,thoroughness_score,avg_response_time_hours,avg_completion_time_hours,active_review_days
+* --exclude-rubber-stamps Exclude rubber-stamp reviews (approvals with no body and no inline comments) from the review and comment tallies
 * --no-cache Disable PR review caching (always fetch fresh data from API). By default, caching is enabled for better performance.
 * --clear-cache Clear all cached pull request data and exit
 * --clear-expired-cache Clear only expired cached data and exit
@@ -209,6 +226,9 @@ metrics = ["reviews", "comments"]
 github-host = "https://ghe.example.com"
 github-rest-path = "/api/v3"
 github-graphql-path = "/api/graphql"
+
+# exclude rubber-stamp approvals from the tallies
+exclude-rubber-stamps = true
 
 # sprint analysis output and plotting
 sprint-analysis = true

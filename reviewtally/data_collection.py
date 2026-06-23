@@ -38,6 +38,7 @@ class ReviewDataContext:
     sprint_stats: dict[str, dict[str, Any]] | None = None
     sprint_periods: list[tuple[datetime, datetime, str]] | None = None
     use_cache: bool = True
+    exclude_rubber_stamps: bool = False
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,7 @@ class ProcessRepositoriesContext:
     sprint_stats: dict[str, dict[str, Any]] | None = None
     sprint_periods: list[tuple[datetime, datetime, str]] | None = None
     use_cache: bool = True
+    exclude_rubber_stamps: bool = False
 
 
 @dataclass
@@ -99,16 +101,25 @@ def collect_review_data(context: ReviewDataContext) -> None:
             comment_count = review["comment_count"]
             pr_number = review["pull_number"]
             review_submitted_at = review.get("submitted_at")
+            is_rubber_stamp = review.get("is_rubber_stamp", False)
 
             if login not in context.reviewer_stats:
                 context.reviewer_stats[login] = {
                     "reviews": 0,
                     "comments": 0,
+                    "rubber_stamps": 0,
                     "engagement_level": "Low",
                     "thoroughness_score": 0,
                     "review_times": [],
                     "pr_created_times": [],
                 }
+
+            if is_rubber_stamp:
+                context.reviewer_stats[login]["rubber_stamps"] += 1
+                # When excluding rubber stamps, drop them from the tally
+                # entirely (no review/comment/temporal contribution).
+                if context.exclude_rubber_stamps:
+                    continue
 
             context.reviewer_stats[login]["reviews"] += 1
             context.reviewer_stats[login]["comments"] += comment_count
@@ -129,52 +140,60 @@ def collect_review_data(context: ReviewDataContext) -> None:
                 )
 
             # Sprint-based aggregation (if enabled and submitted_at exists)
-            if (
-                context.sprint_stats is not None
-                and context.sprint_periods is not None
-                and review_submitted_at is not None
-            ):
-                review_date = datetime.strptime(
-                    review_submitted_at,
-                    "%Y-%m-%dT%H:%M:%SZ",
-                ).replace(tzinfo=timezone.utc)
-                sprint_label = get_sprint_for_date(
-                    review_date,
-                    context.sprint_periods,
-                )
+            _update_sprint_stats(context, review, pr_lookup)
 
-                if sprint_label not in context.sprint_stats:
-                    context.sprint_stats[sprint_label] = {
-                        "total_reviews": 0,
-                        "total_comments": 0,
-                        "unique_reviewers": set(),
-                        "review_times": [],
-                        "pr_created_times": [],
-                    }
 
-                context.sprint_stats[sprint_label]["total_reviews"] += 1
-                context.sprint_stats[sprint_label]["total_comments"] += (
-                    comment_count
-                )
-                context.sprint_stats[sprint_label]["unique_reviewers"].add(
-                    login,
-                )
-                context.sprint_stats[sprint_label]["review_times"].append(
-                    review_submitted_at,
-                )
-                context.sprint_stats[sprint_label]["pr_created_times"].append(
-                    pr_lookup[pr_number]["created_at"],
-                )
-            elif (
-                context.sprint_stats is not None
-                and review_submitted_at is None
-            ):
-                # Log when we skip sprint aggregation due to missing timestamp
-                print(  # noqa: T201
-                    f"Warning: Skipping sprint "
-                    f"aggregation for review by {login} "
-                    f"on PR {pr_number} (missing submitted_at)",
-                )
+def _update_sprint_stats(
+    context: ReviewDataContext,
+    review: dict[str, Any],
+    pr_lookup: dict[int, dict[str, Any]],
+) -> None:
+    """Accumulate sprint-level metrics for a single review."""
+    if context.sprint_stats is None:
+        return
+
+    login = review["user"]["login"]
+    comment_count = review["comment_count"]
+    pr_number = review["pull_number"]
+    review_submitted_at = review.get("submitted_at")
+
+    if context.sprint_periods is None or review_submitted_at is None:
+        if review_submitted_at is None:
+            # Log when we skip sprint aggregation due to missing timestamp
+            print(  # noqa: T201
+                f"Warning: Skipping sprint "
+                f"aggregation for review by {login} "
+                f"on PR {pr_number} (missing submitted_at)",
+            )
+        return
+
+    review_date = datetime.strptime(
+        review_submitted_at,
+        "%Y-%m-%dT%H:%M:%SZ",
+    ).replace(tzinfo=timezone.utc)
+    sprint_label = get_sprint_for_date(
+        review_date,
+        context.sprint_periods,
+    )
+
+    if sprint_label not in context.sprint_stats:
+        context.sprint_stats[sprint_label] = {
+            "total_reviews": 0,
+            "total_comments": 0,
+            "unique_reviewers": set(),
+            "review_times": [],
+            "pr_created_times": [],
+        }
+
+    context.sprint_stats[sprint_label]["total_reviews"] += 1
+    context.sprint_stats[sprint_label]["total_comments"] += comment_count
+    context.sprint_stats[sprint_label]["unique_reviewers"].add(login)
+    context.sprint_stats[sprint_label]["review_times"].append(
+        review_submitted_at,
+    )
+    context.sprint_stats[sprint_label]["pr_created_times"].append(
+        pr_lookup[pr_number]["created_at"],
+    )
 
 
 def process_repositories(
@@ -209,6 +228,7 @@ def process_repositories(
             sprint_stats=context.sprint_stats,
             sprint_periods=context.sprint_periods,
             use_cache=context.use_cache,
+            exclude_rubber_stamps=context.exclude_rubber_stamps,
         )
         collect_review_data(review_context)
         timestamped_print(
