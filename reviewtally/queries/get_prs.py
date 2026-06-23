@@ -33,6 +33,8 @@ ITEMS_PER_PAGE = 100
 GITHUB_SEARCH_LIMIT = 1000
 RATE_LIMIT_REMAINING_THRESHOLD = 10  # arbitrary threshold
 RATE_LIMIT_SLEEP_SECONDS = 60  # seconds to sleep if rate limit is hit
+HTTP_BAD_REQUEST = 400
+HTTP_INTERNAL_SERVER_ERROR = 500
 
 
 def backoff_if_ratelimited(headers: Mapping[str, str]) -> None:
@@ -70,6 +72,16 @@ def _backoff_delay(attempt: int) -> None:
     time.sleep(delay + jitter)
 
 
+def _print_4xx_error_message(response: requests.Response) -> None:
+    if HTTP_BAD_REQUEST <= response.status_code < HTTP_INTERNAL_SERVER_ERROR:
+        try:
+            data = response.json()
+            if isinstance(data, dict) and "message" in data:
+                print(data["message"])  # noqa: T201
+        except ValueError:
+            pass
+
+
 def _make_pr_request_with_retry(
     url: str,
     headers: dict[str, str],
@@ -99,6 +111,7 @@ def _make_pr_request_with_retry(
 
             # Handle rate limiting (existing logic)
             backoff_if_ratelimited(response.headers)
+            _print_4xx_error_message(response)
             try:
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
