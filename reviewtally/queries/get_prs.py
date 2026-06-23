@@ -345,14 +345,15 @@ def get_pull_requests_between_dates(
 def _fetch_pr_details(owner: str, repo: str, prs: list[dict]) -> list[dict]:
     """
     Fetch PR details like additions, deletions, changed_files.
-    
+
     Args:
         owner: Repository owner
         repo: Repository name
         prs: List of PR dictionaries
-        
+
     Returns:
         Updated list with size fields added.
+
     """
     prs_to_fetch = [pr for pr in prs if "additions" not in pr]
     if not prs_to_fetch:
