@@ -93,7 +93,9 @@ def collect_review_data(context: ReviewDataContext) -> None:
             use_cache=context.use_cache,
         )
         for review in reviewer_data:
-            user = review["user"]
+            user = review.get("user")
+            if not user:
+                continue
             if "login" not in user:
                 raise LoginNotFoundError
 
