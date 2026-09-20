@@ -186,6 +186,34 @@ class TestMissingSubmittedAtMain(unittest.TestCase):
             # Should have printed warnings for both reviewers
             assert mock_print.call_count == len(reviewer_data_all_missing)
 
+    def test_reviewer_data_with_missing_user(self) -> None:
+        """Test behavior when a review has missing or None user."""
+        reviewer_data_missing_user = [
+            {
+                "user": None,
+                "comment_count": 1,
+                "pull_number": 12,
+                "submitted_at": "2019-11-17T17:43:43Z",
+            },
+            {
+                "user": {"login": "valid_reviewer"},
+                "comment_count": 2,
+                "pull_number": 12,
+                "submitted_at": "2019-11-17T17:43:43Z",
+            },
+        ]
+
+        with patch(
+            "reviewtally.data_collection.get_reviewers_with_comments_for_pull_requests",
+        ) as mock_get_reviewers:
+            mock_get_reviewers.return_value = reviewer_data_missing_user
+            collect_review_data(self.context)
+
+            assert len(self.context.reviewer_stats) == 1
+            assert "valid_reviewer" in self.context.reviewer_stats
+            reviewer_stats = self.context.reviewer_stats["valid_reviewer"]
+            assert reviewer_stats["reviews"] == 1
+
 
 if __name__ == "__main__":
     unittest.main()

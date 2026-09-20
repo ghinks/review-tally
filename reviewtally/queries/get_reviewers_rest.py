@@ -171,10 +171,7 @@ async def fetch_batch(
         timeout=AIOHTTP_TIMEOUT,
         connector=connector,
     ) as session:
-        tasks = [
-            fetch(session, url, github_token=token)
-            for url in urls
-        ]
+        tasks = [fetch(session, url, github_token=token) for url in urls]
         return await asyncio.gather(*tasks)  # type: ignore[return-value]
 
 
@@ -193,7 +190,12 @@ def get_reviewers_for_pull_requests(
         for pull_number in pull_numbers
     ]
     reviewers = asyncio.run(fetch_batch(urls, github_token=token))
-    return [item["user"] for sublist in reviewers for item in sublist]
+    return [
+        item["user"]
+        for sublist in reviewers
+        for item in sublist
+        if isinstance(item.get("user"), dict) and item["user"].get("login")
+    ]
 
 
 def _check_pr_cache(
@@ -243,8 +245,15 @@ def _fetch_review_metadata(
     for i, sublist in enumerate(reviews_response):
         pull_number = uncached_prs[i]
         for review in sublist:
-            user = review["user"]
-            review_id = review["id"]
+            user = review.get("user")
+            review_id = review.get("id")
+
+            if not isinstance(user, dict) or not user.get("login"):
+                print(  # noqa: T201
+                    f"Warning: Skipping review {review_id} for PR "
+                    f"{pull_number} (missing user)",
+                )
+                continue
 
             comment_path = (
                 f"repos/{owner}/{repo}/pulls/{pull_number}/"
@@ -399,14 +408,21 @@ def get_reviewers_with_comments_for_pull_requests(
     )
 
     # Cache empty results for PRs with no reviews (only if caching enabled)
-    if not review_data and use_cache:
+    if use_cache:
+        prs_with_reviews = {r["pull_number"] for r in review_data}
         for pull_number in uncached_prs:
-            cache_manager.cache_per_review(
-                owner,
-                repo,
-                pull_number,
-                [],
-            )
+            if pull_number not in prs_with_reviews:
+                cache_manager.cache_per_review(
+                    owner,
+                    repo,
+                    pull_number,
+                    [],
+                )
 
     # Combine cached and newly fetched results
-    return cached_results + uncached_results
+    all_results = cached_results + uncached_results
+    return [
+        review
+        for review in all_results
+        if isinstance(review.get("user"), dict) and review["user"].get("login")
+    ]

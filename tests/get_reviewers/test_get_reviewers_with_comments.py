@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from reviewtally.queries.get_reviewers_rest import (
     get_reviewers_with_comments_for_pull_requests,
@@ -363,6 +364,62 @@ class TestGetReviewersWithComments(unittest.TestCase):
         )
         assert reviewer2_result["submitted_at"] == "2019-11-17T18:43:43Z"
         assert reviewer2_result["comment_count"] == self.EXPECTED_NO_COMMENTS
+
+    @mock_http()
+    def test_get_reviewers_with_comments_missing_user(
+        self,
+        mocked: MockHTTP,
+    ) -> None:
+        """Test handling of reviews with missing or None user."""
+        pull_numbers = [self.PULL_REQUEST_1]
+
+        reviews_payload = [
+            {
+                "id": 80,
+                "user": {"login": "octocat"},
+                "body": "LGTM",
+                "state": "APPROVED",
+                "submitted_at": "2019-11-17T17:43:43Z",
+            },
+            {
+                "id": 99,
+                "user": None,
+                "body": "Deleted user review",
+                "state": "COMMENTED",
+                "submitted_at": "2019-11-17T18:00:00Z",
+            },
+        ]
+        reviews_url = get_reviews_url(
+            self.OWNER,
+            self.REPO,
+            self.PULL_REQUEST_1,
+        )
+        mocked.get(reviews_url, status=200, payload=reviews_payload)
+
+        comments_url_80 = get_review_comments_url(
+            self.OWNER,
+            self.REPO,
+            self.PULL_REQUEST_1,
+            80,
+        )
+        mocked.get(comments_url_80, status=200, payload=[])
+
+        with patch("builtins.print") as mock_print:
+            results = get_reviewers_with_comments_for_pull_requests(
+                self.OWNER,
+                self.REPO,
+                pull_numbers,
+                github_token=TEST_GITHUB_TOKEN,
+            )
+
+            assert len(results) == 1
+            assert results[0]["user"]["login"] == "octocat"
+            assert results[0]["review_id"] == self.REVIEW_ID_80
+
+            mock_print.assert_called_with(
+                f"Warning: Skipping review 99 for PR {self.PULL_REQUEST_1} "
+                f"(missing user)",
+            )
 
 
 if __name__ == "__main__":
