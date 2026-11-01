@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "review-tally"
-version = "1.0.0"
+version = "1.0.1"
 description = "A tool to discover who is reviewing your organization's PRs"
 authors = ["ghinks <ghinks@yahoo.com>"]
 license = "Apache"
